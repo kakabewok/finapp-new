@@ -4,7 +4,9 @@ import { TransactionList } from "@/components/transactions/TransactionList";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
-export default function TransactionsPage() {
+export default function TransactionsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+  const refreshKey = typeof searchParams?.refresh === 'string' ? searchParams.refresh : 'default';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -20,7 +22,7 @@ export default function TransactionsPage() {
         </Button>
       </div>
       
-      <TransactionList />
+      <TransactionList key={refreshKey} />
     </div>
   );
 }

@@ -163,8 +163,8 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
       }
 
       toast.success(`Transaction ${isEdit ? "updated" : "created"} successfully`);
-      router.push("/transactions");
       router.refresh();
+      router.push(`/transactions?refresh=${Date.now()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

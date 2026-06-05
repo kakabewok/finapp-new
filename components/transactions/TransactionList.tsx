@@ -106,8 +106,13 @@ export function TransactionList() {
         if (dateFrom) params.append("dateFrom", dateFrom);
         if (dateTo) params.append("dateTo", dateTo);
       }
+      
+      // Add timestamp to bust browser cache
+      params.append("_t", Date.now().toString());
 
-      const res = await fetch(`/api/transactions?${params.toString()}`);
+      const res = await fetch(`/api/transactions?${params.toString()}`, {
+        cache: "no-store"
+      });
       if (res.ok) {
         const { data, totalPages: tp } = await res.json();
         setTransactions(data);
