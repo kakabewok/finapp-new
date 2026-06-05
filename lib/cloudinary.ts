@@ -16,7 +16,7 @@ export interface CloudinaryUploadResult {
  */
 export async function uploadToCloudinary(
   fileBuffer: Buffer,
-  folder: string = "finapp/receipts"
+  folder: string = "siboros/receipts"
 ): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader

@@ -3,23 +3,27 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { getIcon } from "@/lib/icons";
 import { Transaction, Category } from "@/types";
+import { cn } from "@/lib/utils";
 import { 
   Plus, 
   Search, 
   ArrowUpRight, 
   ArrowDownRight, 
   ArrowRightLeft,
-  Filter,
   MoreHorizontal,
   Trash2,
   ChevronLeft,
   ChevronRight,
-  ReceiptText
+  ReceiptText,
+  Calendar as CalendarIcon
 } from "lucide-react";
+import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import {
   Table,
   TableBody,
@@ -60,6 +64,9 @@ export function TransactionList() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [datePreset, setDatePreset] = useState("This Month");
+  const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [dateTo, setDateTo] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 10;
@@ -95,6 +102,10 @@ export function TransactionList() {
       if (debouncedSearch) params.append("search", debouncedSearch);
       if (typeFilter !== "all") params.append("type", typeFilter);
       if (categoryFilter !== "all") params.append("category", categoryFilter);
+      if (datePreset !== "All Time") {
+        if (dateFrom) params.append("dateFrom", dateFrom);
+        if (dateTo) params.append("dateTo", dateTo);
+      }
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
       if (res.ok) {
@@ -108,7 +119,7 @@ export function TransactionList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter, categoryFilter]);
+  }, [page, debouncedSearch, typeFilter, categoryFilter, datePreset, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchTransactions();
@@ -149,7 +160,7 @@ export function TransactionList() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -162,9 +173,30 @@ export function TransactionList() {
             }}
           />
         </div>
-        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+        <div className="flex gap-2 flex-wrap">
+          <Select value={datePreset} onValueChange={(val) => { 
+            setDatePreset(val);
+            setPage(1);
+            if (val === "This Month") { setDateFrom(format(startOfMonth(new Date()), 'yyyy-MM-dd')); setDateTo(format(endOfMonth(new Date()), 'yyyy-MM-dd')); }
+            else if (val === "Last Month") { setDateFrom(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')); setDateTo(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')); }
+            else if (val === "Last 3 Months") { setDateFrom(format(startOfMonth(subMonths(new Date(), 2)), 'yyyy-MM-dd')); setDateTo(format(endOfMonth(new Date()), 'yyyy-MM-dd')); }
+            else if (val === "This Year") { setDateFrom(format(startOfYear(new Date()), 'yyyy-MM-dd')); setDateTo(format(endOfYear(new Date()), 'yyyy-MM-dd')); }
+          }}>
+            <SelectTrigger className="w-[130px] sm:w-[140px]">
+              <SelectValue placeholder="Date" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="This Month">This Month</SelectItem>
+              <SelectItem value="Last Month">Last Month</SelectItem>
+              <SelectItem value="Last 3 Months">Last 3 Months</SelectItem>
+              <SelectItem value="This Year">This Year</SelectItem>
+              <SelectItem value="All Time">All Time</SelectItem>
+              <SelectItem value="Custom Range">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setPage(1); }}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-[100px] sm:w-[110px]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -176,7 +208,7 @@ export function TransactionList() {
           </Select>
           
           <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(1); }}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[120px] sm:w-[140px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -187,23 +219,100 @@ export function TransactionList() {
             </SelectContent>
           </Select>
 
-          <Button asChild className="ml-auto">
+          <Button asChild className="ml-auto h-11 sm:h-9">
             <Link href="/transactions/new">
               <Plus className="mr-2 h-4 w-4" />
-              Add Manual
+              <span className="hidden sm:inline">Add Manual</span>
+              <span className="sm:hidden">Add</span>
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-md bg-card">
+      {datePreset === "Custom Range" && (
+        <div className="flex gap-2 items-center bg-muted/50 p-2 rounded-md border flex-wrap">
+          <CalendarIcon className="h-4 w-4 text-muted-foreground ml-2" />
+          <Input 
+            type="date" 
+            value={dateFrom} 
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="w-[140px] sm:w-[150px] h-8"
+          />
+          <span className="text-muted-foreground">to</span>
+          <Input 
+            type="date" 
+            value={dateTo} 
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="w-[140px] sm:w-[150px] h-8"
+          />
+        </div>
+      )}
+
+      {/* Mobile Card Layout — visible only below sm */}
+      <div className="space-y-3 sm:hidden">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[120px]" />
+                  <Skeleton className="h-3 w-[80px]" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-[60px]" />
+            </div>
+          ))
+        ) : transactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <ReceiptText className="h-12 w-12 mb-4 opacity-20" />
+            <p>No transactions found.</p>
+          </div>
+        ) : (
+          transactions.map((transaction) => {
+            const IconComponent = getIcon(transaction.category?.icon);
+            return (
+              <Link
+                key={transaction.id}
+                href={`/transactions/${transaction.id}`}
+                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors active:bg-muted"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-muted rounded-full">
+                    {getTypeIcon(transaction.type)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium line-clamp-1">
+                      {transaction.merchant_name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(transaction.transaction_date)}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={cn("text-sm font-semibold",
+                    transaction.type === "income" ? "text-emerald-500" : transaction.type === "expense" ? "text-rose-500" : ""
+                  )}>
+                    {transaction.type === "income" ? "+" : transaction.type === "expense" ? "-" : ""}
+                    {formatCurrency(transaction.amount, transaction.currency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{transaction.category?.name || "Uncategorized"}</p>
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table Layout — visible at sm and above */}
+      <div className="hidden sm:block border rounded-md bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Transaction</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead className="hidden md:table-cell">Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -214,7 +323,7 @@ export function TransactionList() {
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-10 w-[200px]" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-[100px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[80px]" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-[80px] ml-auto" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
@@ -250,12 +359,15 @@ export function TransactionList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="flex w-fit items-center gap-1">
-                      {transaction.category?.icon} 
-                      {transaction.category?.name || "Uncategorized"}
-                    </Badge>
+                    <CategoryBadge 
+                      icon={transaction.category?.icon ?? "MoreHorizontal"} 
+                      color={transaction.category?.color ?? "#6B7280"} 
+                      name={transaction.category?.name ?? "Uncategorized"} 
+                      showName 
+                      size="sm" 
+                    />
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                     {formatDate(transaction.transaction_date)}
                   </TableCell>
                   <TableCell className={`text-right font-semibold ${
@@ -308,6 +420,7 @@ export function TransactionList() {
             <Button
               variant="outline"
               size="sm"
+              className="h-11 sm:h-9"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1 || isLoading}
             >
@@ -316,6 +429,7 @@ export function TransactionList() {
             <Button
               variant="outline"
               size="sm"
+              className="h-11 sm:h-9"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || isLoading}
             >

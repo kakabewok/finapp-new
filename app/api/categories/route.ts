@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const categorySchema = z.object({
@@ -12,7 +12,7 @@ const categorySchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     // Auth check is handled by proxy, but good practice to verify here
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -23,7 +23,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("categories")
       .select("*")
-      .or(`user_id.eq.${user.id},is_default.eq.true`)
+      .eq("user_id", user.id)
       .order("name");
 
     if (error) {
@@ -40,7 +40,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

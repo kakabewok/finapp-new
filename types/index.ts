@@ -137,3 +137,55 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface Budget {
+  id: string;
+  user_id: string;
+  category_id: string;
+  month: number;
+  year: number;
+  amount: number;
+  rollover_enabled: boolean;
+  rollover_amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BudgetSummary {
+  id: string;
+  user_id: string;
+  category_id: string;
+  category_name: string;
+  category_icon: string | null;
+  category_color: string | null;
+  month: number;
+  year: number;
+  budget_amount: number;
+  rollover_amount: number;
+  effective_budget: number;
+  spent_amount: number;
+  remaining_amount: number;
+  percentage_used: number;
+  status: 'normal' | 'warning' | 'overbudget';
+}
+
+export interface AIInsight {
+  type: 'positive' | 'warning' | 'negative' | 'info';
+  title: string;
+  description: string;
+}
+
+export interface ReportData {
+  income: number;
+  expense: number;
+  balance: number;
+  savingsRate: number;
+  categoryBreakdown: CategoryBreakdownItem[];
+  dailyTrend: ChartDataPoint[];
+  budgetPerformance: BudgetSummary[];
+  topTransactions: Transaction[];
+  vsLastMonth: {
+    incomeChange: number;
+    expenseChange: number;
+  };
+}

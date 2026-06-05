@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Financial Tracker",
-  description: "AI-powered personal financial tracker and receipt scanner.",
+  title: "Siboros",
+  description: "Siboros - AI-powered personal financial tracker and receipt scanner.",
 };
 
 export default function RootLayout({

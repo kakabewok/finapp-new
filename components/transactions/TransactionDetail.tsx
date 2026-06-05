@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Calendar, Tag, CreditCard, Receipt, Store } from "lucide-react";
 import Image from "next/image";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 
 export function TransactionDetail({ transaction }: { transaction: Transaction }) {
   const getTypeIcon = (type: string) => {
@@ -63,11 +64,15 @@ export function TransactionDetail({ transaction }: { transaction: Transaction })
               </div>
               <Separator />
               <div className="flex items-center gap-3">
-                <Tag className="h-5 w-5 text-muted-foreground" />
+                <CategoryBadge 
+                  icon={transaction.category?.icon ?? "MoreHorizontal"} 
+                  color={transaction.category?.color ?? "#6B7280"} 
+                  size="lg" 
+                />
                 <div className="flex-1">
                   <p className="text-sm font-medium leading-none">Category</p>
-                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                    {transaction.category?.icon} {transaction.category?.name || "Uncategorized"}
+                  <p className="text-sm font-medium mt-1">
+                    {transaction.category?.name || "Uncategorized"}
                   </p>
                 </div>
               </div>

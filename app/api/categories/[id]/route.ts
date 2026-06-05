@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const updateCategorySchema = z.object({
@@ -19,7 +19,7 @@ export async function PUT(request: Request, context: Context) {
     const params = await context.params;
     const { id } = params;
     
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -72,7 +72,7 @@ export async function DELETE(request: Request, context: Context) {
     const params = await context.params;
     const { id } = params;
     
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

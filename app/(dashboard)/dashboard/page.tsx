@@ -65,13 +65,13 @@ export default function DashboardPage() {
       {isLoading && !data ? (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <Skeleton className="h-[120px] w-full rounded-xl" />
-            <Skeleton className="h-[120px] w-full rounded-xl" />
-            <Skeleton className="h-[120px] w-full rounded-xl" />
+            <Skeleton className="h-[120px] w-full rounded-lg" />
+            <Skeleton className="h-[120px] w-full rounded-lg" />
+            <Skeleton className="h-[120px] w-full rounded-lg" />
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Skeleton className="h-[400px] col-span-1 lg:col-span-2 rounded-xl" />
-            <Skeleton className="h-[400px] col-span-1 rounded-xl" />
+            <Skeleton className="h-[400px] col-span-1 lg:col-span-2 rounded-lg" />
+            <Skeleton className="h-[400px] col-span-1 rounded-lg" />
           </div>
         </div>
       ) : data ? (

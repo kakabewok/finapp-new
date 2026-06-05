@@ -8,7 +8,9 @@ import * as z from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Plus, Trash2, ChevronUp, ChevronDown, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getIcon } from "@/lib/icons";
 
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -197,7 +199,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="amount"
@@ -271,10 +273,13 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
                   <SelectContent>
                     {filteredCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          {cat.icon && <span>{cat.icon}</span>}
-                          <span>{cat.name}</span>
-                        </div>
+                        <CategoryBadge 
+                          icon={cat.icon} 
+                          color={cat.color} 
+                          name={cat.name} 
+                          showName 
+                          size="sm" 
+                        />
                       </SelectItem>
                     ))}
                   </SelectContent>

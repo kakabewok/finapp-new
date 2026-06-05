@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractReceiptData } from "@/lib/gemini";
 import { ScanResponse } from "@/types";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     // 1. Verify Authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
     
     // Create a unique folder for the user
-    const folderPath = `finapp/receipts/${user.id}`;
+    const folderPath = `siboros/receipts/${user.id}`;
     
     const uploadResult = await uploadToCloudinary(buffer, folderPath);
 

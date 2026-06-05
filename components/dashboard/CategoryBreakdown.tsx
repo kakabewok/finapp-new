@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { getIcon } from "@/lib/icons";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { CategoryBreakdownItem } from "@/types";
 
@@ -45,7 +47,7 @@ export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
                       <Cell key={`cell-${index}`} fill={getChartColor(index, entry.color)} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value: any) => formatCurrency(Number(value))}
                     contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))' }}
                   />
@@ -57,20 +59,20 @@ export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
                 <p className="text-sm font-bold">{formatCurrency(totalExpense)}</p>
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto mt-2 pr-2">
               <div className="space-y-3">
                 {data.map((category, index) => (
-                  <div key={category.name} className="flex items-center justify-between text-sm">
+                  <div key={index} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: getChartColor(index, category.color) }}
+                      <CategoryBadge 
+                        icon={category.icon} 
+                        color={getChartColor(index, category.color)} 
+                        name={category.name} 
+                        showName 
+                        size="sm" 
+                        className="truncate max-w-[150px] sm:max-w-[180px]"
                       />
-                      <span className="flex items-center gap-1">
-                        {category.icon && <span className="text-xs">{category.icon}</span>}
-                        <span className="font-medium truncate max-w-[100px] sm:max-w-[120px]">{category.name}</span>
-                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">{category.percentage.toFixed(1)}%</span>

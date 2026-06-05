@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Papa from "papaparse";
 import { format } from "date-fns";
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     const csvString = Papa.unparse(csvData);
 
     // Set headers for file download
-    const filename = `finapp_export_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    const filename = `siboros_export_${format(new Date(), "yyyy-MM-dd")}.csv`;
     
     return new NextResponse(csvString, {
       headers: {

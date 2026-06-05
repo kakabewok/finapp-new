@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createSupabaseClient();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +51,9 @@ export default function RegisterPage() {
         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
           <Wallet className="w-6 h-6 text-primary" />
         </div>
-        <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
+        <CardTitle className="text-2xl font-bold tracking-tight">Join Siboros</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Enter your email below to create your account
+          Enter your email below to create your Siboros account
         </CardDescription>
       </CardHeader>
       <CardContent>

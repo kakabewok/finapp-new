@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/lib/utils";
+import { getIcon } from "@/lib/icons";
 import { Transaction } from "@/types";
 import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -83,7 +84,11 @@ export function RecentTransactions() {
                       <span>{formatRelativeTime(transaction.transaction_date)}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
-                        {transaction.category?.icon} {transaction.category?.name || "Uncategorized"}
+                        {(() => {
+                          const IconComponent = getIcon(transaction.category?.icon);
+                          return <IconComponent size={14} className="text-muted-foreground" />;
+                        })()}
+                        {transaction.category?.name || "Uncategorized"}
                       </span>
                     </div>
                   </div>

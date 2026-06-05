@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { seedDefaultCategories } from "@/lib/supabase/seed-categories";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -7,11 +8,15 @@ export async function GET(request: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
 
   if (code) {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await seedDefaultCategories(supabase, user.id);
+      }
       return NextResponse.redirect(`${baseUrl}/dashboard`);
     }
   }

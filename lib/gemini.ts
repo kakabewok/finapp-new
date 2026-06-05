@@ -1,10 +1,5 @@
-import OpenAI from "openai";
+import { aiClient, AI_MODEL } from "@/lib/ai/client";
 import type { ScanResult } from "@/types";
-
-const openai = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
-  baseURL: "https://ai.sumopod.com/v1",
-});
 
 const EXTRACTION_PROMPT = `Analyze this receipt or payment proof image and extract the data as a JSON object with exactly these fields:
 {
@@ -74,8 +69,8 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
     const base64Image = Buffer.from(imageBuffer).toString("base64");
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-    const result = await openai.chat.completions.create({
-      model: "gemini/gemini-2.5-flash-lite",
+    const result = await aiClient.chat.completions.create({
+      model: AI_MODEL,
       messages: [
         {
           role: "user",
@@ -100,7 +95,7 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
     console.log("RAW AI RESPONSE:", text);
 
     if (!text) {
-      console.error("Model returned empty response — it may not support image input. Consider falling back to gemini/gemini-2.5-flash-lite.");
+      console.error("Model returned empty response — it may not support image input.");
       return null;
     }
 
@@ -143,7 +138,68 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
       payment_method: parsed.payment_method || null,
     };
   } catch (error) {
-    console.error("Sumopod extraction error:", error instanceof Error ? error.message : String(error));
+    console.error("AI extraction error:", error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
+export async function generateFinancialInsights(data: {
+  income: string;
+  expense: string;
+  balance: string;
+  savingsRate: number;
+  budgetSummary: string;
+  topCategories: string;
+  incomeChange: number;
+  expenseChange: number;
+}) {
+  const prompt = `You are a personal finance advisor. Analyze this user's financial data for the month and provide actionable insights in English.
+Data:
+Total Income: ${data.income}
+Total Expense: ${data.expense}
+Net Balance: ${data.balance}
+Savings Rate: ${data.savingsRate}%
+Budget performance: ${data.budgetSummary}
+Top spending categories: ${data.topCategories}
+vs last month: income ${data.incomeChange}%, expense ${data.expenseChange}%
+
+Provide exactly 4 insight points in this JSON format:
+{
+  "insights": [
+    {
+      "type": "positive" | "warning" | "negative" | "info",
+      "title": "short title max 8 words",
+      "description": "1-2 sentence insight max 30 words"
+    }
+  ],
+  "overall_score": number (1-100, financial health score),
+  "summary": "Overall 1 paragraph summary max 50 words"
+}
+
+Return ONLY the JSON string. No markdown formatting.`;
+
+  try {
+    const result = await aiClient.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1000,
+    });
+
+    const text = result.choices[0].message.content || "";
+    let jsonString = text.trim();
+    if (jsonString.startsWith("```json")) jsonString = jsonString.slice(7);
+    else if (jsonString.startsWith("```")) jsonString = jsonString.slice(3);
+    if (jsonString.endsWith("```")) jsonString = jsonString.slice(0, -3);
+    jsonString = jsonString.trim();
+    
+    if (!jsonString.startsWith("{")) {
+      const match = jsonString.match(/\{[\s\S]*\}/);
+      if (match) jsonString = match[0];
+    }
+
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("AI Insight error:", error);
     return null;
   }
 }

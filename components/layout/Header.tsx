@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, Menu, User } from "lucide-react";
+import { Moon, Sun, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
-export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
+export function Header() {
   const { setTheme, theme } = useTheme();
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const supabase = createClient();
+  const supabase = createSupabaseClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -30,20 +30,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }, [supabase.auth]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-6 backdrop-blur-md">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden"
-        onClick={onMenuClick}
-      >
-        <Menu className="h-5 w-5" />
-        <span className="sr-only">Toggle menu</span>
-      </Button>
-
-      <div className="flex-1">
-        {/* Placeholder for future global search if needed */}
-      </div>
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-md">
+      <div className="flex-1" />
 
       <div className="flex items-center gap-4">
         <Button
@@ -76,8 +64,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem disabled>Profile</DropdownMenuItem>
+            <DropdownMenuItem disabled>Settings</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

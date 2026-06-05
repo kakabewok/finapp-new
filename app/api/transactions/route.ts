@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const transactionItemSchema = z.object({
@@ -38,7 +38,7 @@ const transactionSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -70,7 +70,10 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (dateFrom) query = query.gte("transaction_date", dateFrom);
-    if (dateTo) query = query.lte("transaction_date", dateTo);
+    if (dateTo) {
+      const toDate = dateTo.includes("T") ? dateTo : `${dateTo}T23:59:59.999Z`;
+      query = query.lte("transaction_date", toDate);
+    }
     if (category) query = query.eq("category_id", category);
     if (type) query = query.eq("type", type);
     if (amountMin) query = query.gte("amount", amountMin);
@@ -106,7 +109,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Trash2, Plus, Tags } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -205,16 +206,14 @@ export default function CategoriesPage() {
                 {customCategories.map((category) => (
                   <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg bg-card/50">
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-                        style={{ backgroundColor: `${category.color}20`, color: category.color || "inherit" }}
-                      >
-                        {category.icon}
-                      </div>
-                      <div>
-                        <p className="font-medium">{category.name}</p>
-                        <Badge variant="outline" className="text-[10px] capitalize">{category.type}</Badge>
-                      </div>
+                      <CategoryBadge 
+                        icon={category.icon} 
+                        color={category.color} 
+                        name={category.name} 
+                        showName 
+                        size="md" 
+                      />
+                      <Badge variant="outline" className="text-[10px] capitalize ml-2">{category.type}</Badge>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -247,17 +246,15 @@ export default function CategoriesPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {defaultCategories.map((category) => (
-                  <div key={category.id} className="flex items-center gap-3 p-3 border border-border/50 rounded-lg bg-card/50">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
-                      style={{ backgroundColor: `${category.color}20`, color: category.color || "inherit" }}
-                    >
-                      {category.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{category.name}</p>
-                      <span className="text-[10px] text-muted-foreground capitalize">{category.type}</span>
-                    </div>
+                  <div key={category.id} className="flex items-center justify-between p-3 border border-border/50 rounded-lg bg-card/50">
+                    <CategoryBadge 
+                      icon={category.icon} 
+                      color={category.color} 
+                      name={category.name} 
+                      showName 
+                      size="md" 
+                    />
+                    <span className="text-[10px] text-muted-foreground capitalize">{category.type}</span>
                   </div>
                 ))}
               </div>
