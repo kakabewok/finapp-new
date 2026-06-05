@@ -10,13 +10,48 @@ const EXTRACTION_PROMPT = `Analyze this receipt or payment proof image and extra
 {
   "merchant_name": string,
   "transaction_date": string (YYYY-MM-DD format),
-  "total_amount": number,
+  "total_amount": number (IMPORTANT: if the receipt is in Indonesian Rupiah and shows "65.000", this means 65000. Do NOT return 65),
   "currency": string (e.g. "IDR", "USD"),
   "items": [{ "name": string, "quantity": number, "price": number }],
   "category": string (must be one of: "Food & Beverage", "Transportation", "Shopping", "Entertainment", "Health", "Utilities", "Education", "Other"),
   "payment_method": string
 }
-Return only the JSON object. Use null for any field that cannot be determined.`;
+Return only the JSON object. Use null for any field that cannot be determined. Pay close attention to Indonesian number formats (dot as thousands separator) and translate any Indonesian categories into the required English category enums.`;
+
+// Handle Indonesian number format: "65.000" → 65000
+function parseIndonesianAmount(value: unknown): number | null {
+  if (!value) return null;
+  const str = String(value).replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+const CATEGORY_MAP: Record<string, string> = {
+  "makanan": "Food & Beverage",
+  "makanan & minuman": "Food & Beverage",
+  "food": "Food & Beverage",
+  "food & beverage": "Food & Beverage",
+  "restaurant": "Food & Beverage",
+  "restoran": "Food & Beverage",
+  "transportasi": "Transportation",
+  "transportation": "Transportation",
+  "belanja": "Shopping",
+  "shopping": "Shopping",
+  "hiburan": "Entertainment",
+  "entertainment": "Entertainment",
+  "kesehatan": "Health",
+  "health": "Health",
+  "utilitas": "Utilities",
+  "utilities": "Utilities",
+  "pendidikan": "Education",
+  "education": "Education",
+};
+
+function normalizeCategory(value: unknown): string | null {
+  if (!value) return null;
+  const lower = String(value).toLowerCase().trim();
+  return CATEGORY_MAP[lower] || value as string;
+}
 
 export async function extractReceiptData(imageUrl: string): Promise<ScanResult | null> {
   try {
@@ -27,7 +62,7 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
 
     const result = await openai.chat.completions.create({
-      model: "gemini/gemini-2.5-flash-lite",
+      model: "MiniMax-M2.7-highspeed",
       messages: [
         {
           role: "user",
@@ -45,7 +80,7 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
           ],
         },
       ],
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     const text = result.choices[0].message.content || "";
@@ -62,16 +97,16 @@ export async function extractReceiptData(imageUrl: string): Promise<ScanResult |
     return {
       merchant_name: parsed.merchant_name || null,
       transaction_date: parsed.transaction_date || null,
-      total_amount: parsed.total_amount ? Number(parsed.total_amount) : null,
+      total_amount: parseIndonesianAmount(parsed.total_amount),
       currency: parsed.currency || "IDR",
       items: Array.isArray(parsed.items)
         ? parsed.items.map((item: { name?: string; quantity?: number; price?: number }) => ({
           name: item.name || "Unknown item",
           quantity: Number(item.quantity) || 1,
-          price: Number(item.price) || 0,
+          price: parseIndonesianAmount(item.price) || 0,
         }))
         : null,
-      category: parsed.category || null,
+      category: normalizeCategory(parsed.category),
       payment_method: parsed.payment_method || null,
     };
   } catch (error) {
