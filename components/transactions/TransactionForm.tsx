@@ -55,6 +55,9 @@ const formSchema = z.object({
   }),
   payment_method: z.string().optional(),
   items: z.array(itemSchema).optional(),
+  receipt_url: z.string().optional().nullable(),
+  receipt_public_id: z.string().optional().nullable(),
+  source: z.enum(["manual", "scan"]).optional().default("manual"),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
@@ -81,6 +84,9 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
       transaction_date: initialData?.transaction_date ? new Date(initialData.transaction_date) : new Date(),
       payment_method: initialData?.payment_method || "",
       items: initialData?.items || [],
+      receipt_url: initialData?.receipt_url || null,
+      receipt_public_id: initialData?.receipt_public_id || null,
+      source: initialData?.source || "manual",
     },
   });
 
