@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReceiptUploader } from "@/components/scan/ReceiptUploader";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
-import { ScanResponse } from "@/types";
+import { ScanResponse, Category } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles } from "lucide-react";
@@ -11,9 +11,58 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 export default function ScanPage() {
   const [scanResult, setScanResult] = useState<ScanResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Fetch categories so we can map category name → category_id
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch("/api/categories");
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const resetScan = () => {
     setScanResult(null);
+  };
+
+  // Map scan result fields to TransactionForm's expected initialData shape
+  const getInitialData = () => {
+    if (!scanResult?.extractedData) return undefined;
+    const data = scanResult.extractedData;
+
+    // Look up the category_id by matching the AI's returned category name
+    let categoryId = "";
+    if (data.category) {
+      const matchedCategory = categories.find(
+        (c) => c.name.toLowerCase() === data.category!.toLowerCase()
+      );
+      if (matchedCategory) {
+        categoryId = matchedCategory.id;
+      }
+    }
+
+    return {
+      type: "expense" as const,
+      amount: data.total_amount ?? 0,
+      currency: data.currency || "IDR",
+      category_id: categoryId,
+      merchant_name: data.merchant_name || "",
+      description: "",
+      transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
+      payment_method: data.payment_method || "",
+      items: data.items || [],
+      source: "scan" as const,
+      receipt_url: scanResult.receiptUrl,
+      receipt_public_id: scanResult.publicId,
+    } as any;
   };
 
   return (
@@ -72,13 +121,7 @@ export default function ScanPage() {
               </CardHeader>
               <CardContent>
                 <TransactionForm 
-                  initialData={{
-                    ...scanResult.extractedData,
-                    type: "expense",
-                    source: "scan",
-                    receipt_url: scanResult.receiptUrl,
-                    receipt_public_id: scanResult.publicId,
-                  } as any}
+                  initialData={getInitialData()}
                   isEdit={false}
                 />
               </CardContent>
@@ -89,3 +132,4 @@ export default function ScanPage() {
     </div>
   );
 }
+

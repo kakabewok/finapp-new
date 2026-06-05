@@ -10,17 +10,23 @@ const EXTRACTION_PROMPT = `Analyze this receipt or payment proof image and extra
 {
   "merchant_name": string,
   "transaction_date": string (YYYY-MM-DD format),
-  "total_amount": number (IMPORTANT: if the receipt is in Indonesian Rupiah and shows "65.000", this means 65000. Do NOT return 65),
+  "total_amount": number,
   "currency": string (e.g. "IDR", "USD"),
   "items": [{ "name": string, "quantity": number, "price": number }],
   "category": string (must be one of: "Food & Beverage", "Transportation", "Shopping", "Entertainment", "Health", "Utilities", "Education", "Other"),
   "payment_method": string
 }
-Return only the JSON object. Use null for any field that cannot be determined. Pay close attention to Indonesian number formats (dot as thousands separator) and translate any Indonesian categories into the required English category enums.`;
+
+IMPORTANT RULES:
+- Return total_amount as a plain integer or decimal number with NO dots or commas as thousand separators. Example: return 65000 not "65.000" or "65,000".
+- Return item prices as plain numbers too. Example: 25000 not "25.000".
+- Determine total_amount from "Grand Total", "Total", or the final amount on the receipt.
+- Return category in English, exactly matching one of the allowed values above.
+- Return only the raw JSON object, no markdown, no explanation.`;
 
 // Handle Indonesian number format: "65.000" → 65000
 function parseIndonesianAmount(value: unknown): number | null {
-  if (!value) return null;
+  if (value === null || value === undefined) return null;
   const str = String(value).replace(/\./g, "").replace(",", ".");
   const num = parseFloat(str);
   return isNaN(num) ? null : num;
@@ -45,12 +51,19 @@ const CATEGORY_MAP: Record<string, string> = {
   "utilities": "Utilities",
   "pendidikan": "Education",
   "education": "Education",
+  "other": "Other",
+  "lainnya": "Other",
 };
+
+const VALID_CATEGORIES = [
+  "Food & Beverage", "Transportation", "Shopping",
+  "Entertainment", "Health", "Utilities", "Education", "Other"
+];
 
 function normalizeCategory(value: unknown): string | null {
   if (!value) return null;
   const lower = String(value).toLowerCase().trim();
-  return CATEGORY_MAP[lower] || value as string;
+  return CATEGORY_MAP[lower] ?? (VALID_CATEGORIES.includes(String(value)) ? String(value) : "Other");
 }
 
 export async function extractReceiptData(imageUrl: string): Promise<ScanResult | null> {

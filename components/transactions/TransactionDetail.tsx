@@ -129,13 +129,20 @@ export function TransactionDetail({ transaction }: { transaction: Transaction })
             </CardHeader>
             <CardContent>
               <div className="relative aspect-auto min-h-[400px] w-full rounded-lg overflow-hidden border">
-                {/* We use standard img for external cloudinary URLs without specific domains configured in next.config.ts initially */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={transaction.receipt_url} 
                   alt="Receipt" 
                   className="object-contain w-full h-full"
                 />
+                <a
+                  href={transaction.receipt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70 transition-colors"
+                >
+                  Open full
+                </a>
               </div>
             </CardContent>
           </Card>
