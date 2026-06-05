@@ -16,6 +16,11 @@ export interface TransactionItem {
   price: number;
 }
 
+export interface OtherFee {
+  name: string;
+  amount: number;
+}
+
 export interface Transaction {
   id: string;
   user_id: string;
@@ -26,6 +31,11 @@ export interface Transaction {
   merchant_name: string | null;
   description: string | null;
   transaction_date: string;
+  subtotal: number | null;
+  discount: number | null;
+  tax: number | null;
+  service_charge: number | null;
+  other_fees: OtherFee[] | null;
   receipt_url: string | null;
   receipt_public_id: string | null;
   payment_method: string | null;
@@ -46,6 +56,11 @@ export interface TransactionFormData {
   merchant_name: string;
   description: string;
   transaction_date: string;
+  subtotal: number | null;
+  discount: number | null;
+  tax: number | null;
+  service_charge: number | null;
+  other_fees: OtherFee[];
   payment_method: string;
   items: TransactionItem[];
   tags: string[];

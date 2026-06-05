@@ -8,6 +8,11 @@ const transactionItemSchema = z.object({
   price: z.number().min(0),
 });
 
+const otherFeeSchema = z.object({
+  name: z.string(),
+  amount: z.number(),
+});
+
 const transactionSchema = z.object({
   type: z.enum(["income", "expense", "transfer"]),
   amount: z.number().positive("Amount must be positive"),
@@ -18,6 +23,11 @@ const transactionSchema = z.object({
   transaction_date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date format",
   }),
+  subtotal: z.number().nullable().optional(),
+  discount: z.number().nullable().optional(),
+  tax: z.number().nullable().optional(),
+  service_charge: z.number().nullable().optional(),
+  other_fees: z.array(otherFeeSchema).nullable().optional(),
   receipt_url: z.string().url().nullable().optional(),
   receipt_public_id: z.string().nullable().optional(),
   payment_method: z.string().nullable().optional(),

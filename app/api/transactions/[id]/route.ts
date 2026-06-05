@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { deleteFromCloudinary } from "@/lib/cloudinary";
 
 const transactionItemSchema = z.object({
   name: z.string(),
   quantity: z.number().min(1),
   price: z.number().min(0),
+});
+
+const otherFeeSchema = z.object({
+  name: z.string(),
+  amount: z.number(),
 });
 
 const updateTransactionSchema = z.object({
@@ -18,6 +24,11 @@ const updateTransactionSchema = z.object({
   transaction_date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date format",
   }).optional(),
+  subtotal: z.number().nullable().optional(),
+  discount: z.number().nullable().optional(),
+  tax: z.number().nullable().optional(),
+  service_charge: z.number().nullable().optional(),
+  other_fees: z.array(otherFeeSchema).nullable().optional(),
   receipt_url: z.string().url().nullable().optional(),
   receipt_public_id: z.string().nullable().optional(),
   payment_method: z.string().nullable().optional(),
@@ -113,11 +124,16 @@ export async function DELETE(request: Request, context: Context) {
     }
 
     // First, check if transaction exists and has a receipt image to delete from Cloudinary
-    // This could be implemented with a trigger, but doing it in the API is safer
-    // to ensure Cloudinary delete happens.
-    
-    // For now, we'll just delete the DB record. Cloudinary cleanup can be done async
-    // or via a separate endpoint if needed to decouple from fast DB response.
+    const { data: transaction } = await supabase
+      .from("transactions")
+      .select("receipt_public_id")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (transaction?.receipt_public_id) {
+      await deleteFromCloudinary(transaction.receipt_public_id);
+    }
     
     const { error } = await supabase
       .from("transactions")

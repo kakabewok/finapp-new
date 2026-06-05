@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, ChevronUp, ChevronDown, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,11 @@ const itemSchema = z.object({
   price: z.coerce.number().min(0, "Must be positive"),
 });
 
+const otherFeeSchema = z.object({
+  name: z.string().min(1, "Fee name is required"),
+  amount: z.coerce.number().min(0, "Must be positive"),
+});
+
 const formSchema = z.object({
   type: z.enum(["income", "expense", "transfer"]),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
@@ -55,6 +60,11 @@ const formSchema = z.object({
   }),
   payment_method: z.string().optional(),
   items: z.array(itemSchema).optional(),
+  subtotal: z.coerce.number().optional().nullable(),
+  discount: z.coerce.number().optional().nullable(),
+  tax: z.coerce.number().optional().nullable(),
+  service_charge: z.coerce.number().optional().nullable(),
+  other_fees: z.array(otherFeeSchema).optional(),
   receipt_url: z.string().optional().nullable(),
   receipt_public_id: z.string().optional().nullable(),
   source: z.enum(["manual", "scan"]).optional().default("manual"),
@@ -71,6 +81,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -84,6 +95,11 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
       transaction_date: initialData?.transaction_date ? new Date(initialData.transaction_date) : new Date(),
       payment_method: initialData?.payment_method || "",
       items: initialData?.items || [],
+      subtotal: initialData?.subtotal || null,
+      discount: initialData?.discount || null,
+      tax: initialData?.tax || null,
+      service_charge: initialData?.service_charge || null,
+      other_fees: initialData?.other_fees || [],
       receipt_url: initialData?.receipt_url || null,
       receipt_public_id: initialData?.receipt_public_id || null,
       source: initialData?.source || "manual",
@@ -95,7 +111,13 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
     control: form.control,
   });
 
+  const { fields: otherFeeFields, append: appendOtherFee, remove: removeOtherFee } = useFieldArray({
+    name: "other_fees",
+    control: form.control,
+  });
+
   const watchType = form.watch("type");
+  const watchReceiptUrl = form.watch("receipt_url");
 
   useEffect(() => {
     async function fetchCategories() {
@@ -304,6 +326,139 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
             )}
           />
         </div>
+
+        {/* Fee Breakdown Section */}
+        {watchType === "expense" && (
+          <div className="border rounded-lg p-4 bg-muted/10">
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowFeeBreakdown(!showFeeBreakdown)}>
+              <div>
+                <h3 className="font-medium text-lg">Fee Breakdown</h3>
+                <p className="text-sm text-muted-foreground">Add subtotal, tax, service charge, and discounts</p>
+              </div>
+              <Button type="button" variant="ghost" size="sm">
+                {showFeeBreakdown ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </Button>
+            </div>
+            
+            {showFeeBreakdown && (
+              <div className="space-y-4 pt-4 border-t mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="subtotal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subtotal</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="discount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Discount</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tax"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tax</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="service_charge"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Service Charge</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-dashed">
+                  <div className="flex items-center justify-between mb-3">
+                    <FormLabel className="text-base font-semibold">Other Fees</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendOtherFee({ name: "", amount: 0 })}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Add Fee
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {otherFeeFields.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No other fees added.</p>
+                    ) : (
+                      otherFeeFields.map((fee, index) => (
+                        <div key={fee.id} className="flex gap-2 items-start">
+                          <div className="grid grid-cols-2 gap-2 flex-1">
+                            <FormField
+                              control={form.control}
+                              name={`other_fees.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input placeholder="Fee name (e.g. Platform Fee)" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`other_fees.${index}.amount`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input type="number" placeholder="Amount" {...field} value={field.value ?? ""} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => removeOtherFee(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Line Items Section */}
         <div className="border rounded-lg p-4 bg-muted/20">

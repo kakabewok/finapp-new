@@ -47,8 +47,14 @@ export async function uploadToCloudinary(
 /**
  * Delete an image from Cloudinary
  */
-export async function deleteFromCloudinary(publicId: string): Promise<void> {
-  await cloudinary.uploader.destroy(publicId);
+export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+    return true;
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
+    return false;
+  }
 }
 
 export default cloudinary;

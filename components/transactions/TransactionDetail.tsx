@@ -90,6 +90,57 @@ export function TransactionDetail({ transaction }: { transaction: Transaction })
           </CardContent>
         </Card>
 
+        {/* Fee Breakdown */}
+        {(transaction.subtotal != null || transaction.discount != null || transaction.tax != null || transaction.service_charge != null || (transaction.other_fees && transaction.other_fees.length > 0)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                Fee Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {transaction.subtotal != null && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatCurrency(transaction.subtotal, transaction.currency)}</span>
+                  </div>
+                )}
+                {transaction.discount != null && transaction.discount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Discount</span>
+                    <span className="text-emerald-500">-{formatCurrency(transaction.discount, transaction.currency)}</span>
+                  </div>
+                )}
+                {transaction.tax != null && transaction.tax > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>{formatCurrency(transaction.tax, transaction.currency)}</span>
+                  </div>
+                )}
+                {transaction.service_charge != null && transaction.service_charge > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Service Charge</span>
+                    <span>{formatCurrency(transaction.service_charge, transaction.currency)}</span>
+                  </div>
+                )}
+                {transaction.other_fees?.map((fee, idx) => (
+                  <div key={idx} className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{fee.name}</span>
+                    <span>{formatCurrency(fee.amount, transaction.currency)}</span>
+                  </div>
+                ))}
+                <Separator className="my-2" />
+                <div className="flex justify-between items-center font-bold text-base">
+                  <span>Grand Total</span>
+                  <span>{formatCurrency(transaction.amount, transaction.currency)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {transaction.items && transaction.items.length > 0 && (
           <Card>
             <CardHeader>
@@ -111,8 +162,11 @@ export function TransactionDetail({ transaction }: { transaction: Transaction })
                 ))}
                 <Separator />
                 <div className="flex justify-between items-center font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(transaction.amount, transaction.currency)}</span>
+                  <span className="text-muted-foreground">Items Total</span>
+                  <span className="text-muted-foreground">{formatCurrency(
+                    transaction.items.reduce((acc, item) => acc + (item.price * item.quantity), 0), 
+                    transaction.currency
+                  )}</span>
                 </div>
               </div>
             </CardContent>
