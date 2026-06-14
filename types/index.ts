@@ -167,6 +167,7 @@ export interface BudgetSummary {
   remaining_amount: number;
   percentage_used: number;
   status: 'normal' | 'warning' | 'overbudget';
+  created_at?: string;
 }
 
 export interface AIInsight {

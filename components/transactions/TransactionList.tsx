@@ -17,7 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ReceiptText,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Edit2,
+  ListChecks,
+  X
 } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -53,6 +56,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useSelection } from "@/hooks/useSelection";
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -74,6 +79,12 @@ export function TransactionList() {
   // Delete Action
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Bulk Selection
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const { selectedIds, toggleSelection, selectAll, clearSelection, isSelected, isAllSelected } = useSelection<string>();
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -153,6 +164,31 @@ export function TransactionList() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch("/api/transactions/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (res.ok) {
+        toast.success(`${selectedIds.size} transactions deleted`);
+        fetchTransactions();
+        clearSelection();
+        setIsSelectMode(false);
+      } else {
+        throw new Error("Bulk delete failed");
+      }
+    } catch (error) {
+      toast.error("Failed to delete selected transactions");
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteConfirm(false);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'income': return <ArrowUpRight className="h-4 w-4 text-emerald-500" />;
@@ -187,7 +223,7 @@ export function TransactionList() {
             else if (val === "Last 3 Months") { setDateFrom(format(startOfMonth(subMonths(new Date(), 2)), 'yyyy-MM-dd')); setDateTo(format(endOfMonth(new Date()), 'yyyy-MM-dd')); }
             else if (val === "This Year") { setDateFrom(format(startOfYear(new Date()), 'yyyy-MM-dd')); setDateTo(format(endOfYear(new Date()), 'yyyy-MM-dd')); }
           }}>
-            <SelectTrigger className="w-[130px] sm:w-[140px]">
+            <SelectTrigger className="w-[130px] md:w-[140px]">
               <SelectValue placeholder="Date" />
             </SelectTrigger>
             <SelectContent>
@@ -201,7 +237,7 @@ export function TransactionList() {
           </Select>
 
           <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setPage(1); }}>
-            <SelectTrigger className="w-[100px] sm:w-[110px]">
+            <SelectTrigger className="w-[100px] md:w-[110px]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -213,7 +249,7 @@ export function TransactionList() {
           </Select>
           
           <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(1); }}>
-            <SelectTrigger className="w-[120px] sm:w-[140px]">
+            <SelectTrigger className="w-[120px] md:w-[140px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -224,11 +260,23 @@ export function TransactionList() {
             </SelectContent>
           </Select>
 
-          <Button asChild className="ml-auto h-11 sm:h-9">
+          <Button
+            variant={isSelectMode ? "secondary" : "outline"}
+            onClick={() => {
+              setIsSelectMode(!isSelectMode);
+              clearSelection();
+            }}
+            className="h-11 md:h-9"
+          >
+            {isSelectMode ? <X className="h-4 w-4 md:mr-2" /> : <ListChecks className="h-4 w-4 md:mr-2" />}
+            <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
+          </Button>
+
+          <Button asChild className="ml-auto h-11 md:h-9">
             <Link href="/transactions/new">
               <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Add Manual</span>
-              <span className="sm:hidden">Add</span>
+              <span className="hidden md:inline">Add Manual</span>
+              <span className="md:hidden">Add</span>
             </Link>
           </Button>
         </div>
@@ -241,23 +289,23 @@ export function TransactionList() {
             type="date" 
             value={dateFrom} 
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="w-[140px] sm:w-[150px] h-8"
+            className="w-[140px] md:w-[150px] h-8"
           />
           <span className="text-muted-foreground">to</span>
           <Input 
             type="date" 
             value={dateTo} 
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="w-[140px] sm:w-[150px] h-8"
+            className="w-[140px] md:w-[150px] h-8"
           />
         </div>
       )}
 
-      {/* Mobile Card Layout — visible only below sm */}
-      <div className="space-y-3 sm:hidden">
+      {/* Mobile Card Layout — visible only below md */}
+      <div className="md:hidden bg-card border rounded-lg overflow-hidden divide-y">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+            <div key={i} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
                 <Skeleton className="h-9 w-9 rounded-full" />
                 <div className="space-y-2">
@@ -277,44 +325,96 @@ export function TransactionList() {
           transactions.map((transaction) => {
             const IconComponent = getIcon(transaction.category?.icon);
             return (
-              <Link
+              <div
                 key={transaction.id}
-                href={`/transactions/${transaction.id}`}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors active:bg-muted"
+                className="flex items-center justify-between hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-muted rounded-full">
-                    {getTypeIcon(transaction.type)}
+                <div
+                  className="flex flex-1 items-center justify-between p-3 min-w-0"
+                  onClick={(e) => {
+                    if (isSelectMode) {
+                      e.preventDefault();
+                      toggleSelection(transaction.id);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {isSelectMode && (
+                      <Checkbox
+                        checked={isSelected(transaction.id)}
+                        onCheckedChange={() => toggleSelection(transaction.id)}
+                        className="mr-1"
+                      />
+                    )}
+                    <Link href={`/transactions/${transaction.id}`} className={cn("flex items-center gap-3 min-w-0 flex-1", isSelectMode && "pointer-events-none")}>
+                      <div className="p-2 bg-muted rounded-full shrink-0">
+                        {getTypeIcon(transaction.type)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium line-clamp-1">
+                          {transaction.merchant_name || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(transaction.transaction_date, { relative: true })}
+                        </p>
+                      </div>
+                    </Link>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium line-clamp-1">
-                      {transaction.merchant_name || 'Unknown'}
+                  <Link href={`/transactions/${transaction.id}`} className={cn("text-right ml-2 shrink-0", isSelectMode && "pointer-events-none")}>
+                    <p className={cn("text-sm font-semibold",
+                      transaction.type === "income" ? "text-emerald-500" : transaction.type === "expense" ? "text-rose-500" : ""
+                    )}>
+                      {transaction.type === "income" ? "+" : transaction.type === "expense" ? "-" : ""}
+                      {formatCurrency(transaction.amount, transaction.currency)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(transaction.transaction_date)}
-                    </p>
-                  </div>
+                    <p className="text-xs text-muted-foreground">{transaction.category?.name || "Uncategorized"}</p>
+                  </Link>
                 </div>
-                <div className="text-right">
-                  <p className={cn("text-sm font-semibold",
-                    transaction.type === "income" ? "text-emerald-500" : transaction.type === "expense" ? "text-rose-500" : ""
-                  )}>
-                    {transaction.type === "income" ? "+" : transaction.type === "expense" ? "-" : ""}
-                    {formatCurrency(transaction.amount, transaction.currency)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{transaction.category?.name || "Uncategorized"}</p>
+
+                <div className="flex items-center pr-2 shrink-0 gap-1">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-muted-foreground hover:text-foreground"
+                    aria-label="Edit transaction"
+                  >
+                    <Link href={`/transactions/${transaction.id}/edit`}>
+                      <Edit2 className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setTransactionToDelete(transaction.id)}
+                    aria-label="Delete transaction"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
                 </div>
-              </Link>
+              </div>
             );
           })
         )}
       </div>
 
-      {/* Desktop Table Layout — visible at sm and above */}
-      <div className="hidden sm:block border rounded-md bg-card">
+      {/* Desktop Table Layout — visible at md and above */}
+      <div className="hidden md:block border rounded-md bg-card">
         <Table>
           <TableHeader>
             <TableRow>
+              {isSelectMode && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={isAllSelected(transactions.map(t => t.id))}
+                    onCheckedChange={(checked) => {
+                      if (checked) selectAll(transactions.map(t => t.id));
+                      else clearSelection();
+                    }}
+                  />
+                </TableHead>
+              )}
               <TableHead>Transaction</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="hidden md:table-cell">Date</TableHead>
@@ -345,6 +445,14 @@ export function TransactionList() {
             ) : (
               transactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-muted/50">
+                  {isSelectMode && (
+                    <TableCell>
+                      <Checkbox
+                        checked={isSelected(transaction.id)}
+                        onCheckedChange={() => toggleSelection(transaction.id)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-muted rounded-full">
@@ -425,7 +533,7 @@ export function TransactionList() {
             <Button
               variant="outline"
               size="sm"
-              className="h-11 sm:h-9"
+              className="h-11 md:h-9"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1 || isLoading}
             >
@@ -434,13 +542,41 @@ export function TransactionList() {
             <Button
               variant="outline"
               size="sm"
-              className="h-11 sm:h-9"
+              className="h-11 md:h-9"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || isLoading}
             >
               Next <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Sticky Bar */}
+      {isSelectMode && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t shadow-lg z-50 flex items-center justify-between md:justify-center md:gap-8">
+          <div className="flex items-center gap-4">
+            <Checkbox
+              id="select-all-mobile"
+              checked={isAllSelected(transactions.map(t => t.id))}
+              onCheckedChange={(checked) => {
+                if (checked) selectAll(transactions.map(t => t.id));
+                else clearSelection();
+              }}
+              className="md:hidden"
+            />
+            <span className="font-medium">
+              {selectedIds.size} selected
+            </span>
+          </div>
+          <Button
+            variant="destructive"
+            disabled={selectedIds.size === 0}
+            onClick={() => setShowBulkDeleteConfirm(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Selected
+          </Button>
         </div>
       )}
 
@@ -462,6 +598,28 @@ export function TransactionList() {
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} transactions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected transactions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={handleBulkDelete} 
+              disabled={isBulkDeleting}
+            >
+              {isBulkDeleting ? "Deleting..." : "Delete"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

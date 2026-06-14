@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Siboros",
-  description: "Siboros - AI-powered personal financial tracker and receipt scanner.",
+  title: "SiBoros",
+  description: "SiBoros - AI-powered personal financial tracker and receipt scanner.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SiBoros",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: "#18181b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -38,6 +55,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <InstallPrompt />
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>

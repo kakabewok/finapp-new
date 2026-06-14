@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { getIcon } from "@/lib/icons";
 
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { CategorySelector } from "@/components/ui/CategorySelector";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -140,6 +142,10 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
     (c) => c.type === watchType || c.type === "both"
   );
 
+  const handleCategoryCreated = (newCategory: Category) => {
+    setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
   async function onSubmit(data: TransactionFormValues) {
     setIsLoading(true);
     try {
@@ -206,12 +212,13 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Amount</FormLabel>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">Rp</span>
-                  <FormControl>
-                    <Input type="number" step="0.01" className="pl-9 text-lg font-semibold" placeholder="0" {...field} />
-                  </FormControl>
-                </div>
+                <FormControl>
+                  <AmountInput 
+                    value={field.value} 
+                    onChange={field.onChange} 
+                    placeholder="0"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -264,26 +271,16 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <CategoryBadge 
-                          icon={cat.icon} 
-                          color={cat.color} 
-                          name={cat.name} 
-                          showName 
-                          size="sm" 
-                        />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <CategorySelector
+                    categories={categories}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onCategoryCreated={handleCategoryCreated}
+                    filterType={watchType as any}
+                    placeholder="Select a category"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

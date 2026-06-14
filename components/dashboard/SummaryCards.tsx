@@ -20,13 +20,10 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {/* Total Balance Card */}
-      <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <Wallet className="h-16 w-16" />
-        </div>
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-          <DollarSign className="h-4 w-4 text-primary" />
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(data.netBalance)}</div>
@@ -47,7 +44,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           <TrendingUp className="h-4 w-4 text-emerald-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
+          <div className="text-2xl font-bold">
             {formatCurrency(data.totalIncome)}
           </div>
           <p className="text-xs flex items-center mt-1">
@@ -67,7 +64,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           <TrendingDown className="h-4 w-4 text-rose-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-rose-500 dark:text-rose-400">
+          <div className="text-2xl font-bold">
             {formatCurrency(data.totalExpenses)}
           </div>
           <p className="text-xs flex items-center mt-1">

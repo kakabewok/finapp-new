@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { User, Settings, LogOut, ChevronDown } from "lucide-react";
+import { User, Settings, LogOut, ChevronDown, Terminal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useIsDeveloper } from "@/hooks/useIsDeveloper";
+import Link from "next/link";
 
 interface UserMenuProps {
   user: { email: string; full_name?: string | null; avatar_url?: string | null };
@@ -22,6 +24,7 @@ interface UserMenuProps {
 export function UserMenu({ user, variant = "mobile" }: UserMenuProps) {
   const router = useRouter();
   const supabase = createSupabaseClient();
+  const isDeveloper = useIsDeveloper(user?.email);
 
   const initials = user.full_name
     ? user.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -59,6 +62,14 @@ export function UserMenu({ user, variant = "mobile" }: UserMenuProps) {
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {isDeveloper && (
+            <DropdownMenuItem asChild>
+              <Link href="/dev/dashboard" className="cursor-pointer">
+                <Terminal size={14} className="mr-2" />
+                Developer Panel
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
             <User size={14} className="mr-2" />
             Profile
@@ -97,6 +108,14 @@ export function UserMenu({ user, variant = "mobile" }: UserMenuProps) {
           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isDeveloper && (
+          <DropdownMenuItem asChild>
+            <Link href="/dev/dashboard" className="cursor-pointer">
+              <Terminal size={14} className="mr-2" />
+              Developer Panel
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
           <User size={14} className="mr-2" />
           Profile

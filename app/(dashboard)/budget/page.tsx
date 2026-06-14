@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { BudgetSummary, Category } from "@/types";
 import { BudgetCard } from "@/components/budget/BudgetCard";
 import { BudgetForm } from "@/components/budget/BudgetForm";
+import { CopyLastMonthDialog } from "@/components/budget/CopyLastMonthDialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, ListChecks, X, Trash2, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSelection } from "@/hooks/useSelection";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +33,15 @@ export default function BudgetPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetSummary | null>(null);
   
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const { selectedIds, toggleSelection, selectAll, clearSelection, isSelected, isAllSelected } = useSelection<string>();
 
   const fetchBudgets = useCallback(async () => {
     setIsLoading(true);
@@ -68,6 +77,9 @@ export default function BudgetPage() {
       if (res.ok) {
         toast.success("Budget deleted");
         fetchBudgets();
+        if (isSelected(deletingId)) {
+          toggleSelection(deletingId);
+        }
       } else {
         throw new Error("Failed to delete");
       }
@@ -75,6 +87,31 @@ export default function BudgetPage() {
       toast.error("Failed to delete budget");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch("/api/budgets/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (res.ok) {
+        toast.success(`${selectedIds.size} budgets deleted`);
+        fetchBudgets();
+        clearSelection();
+        setIsSelectMode(false);
+      } else {
+        throw new Error("Bulk delete failed");
+      }
+    } catch (error) {
+      toast.error("Failed to delete selected budgets");
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteConfirm(false);
     }
   };
 
@@ -86,6 +123,12 @@ export default function BudgetPage() {
   const handleAddNew = () => {
     setEditingBudget(null);
     setIsFormOpen(true);
+  };
+
+  const handleCategoryCreated = (newCategory: Category) => {
+    setCategories((prev) =>
+      [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name))
+    );
   };
 
   const totalBudget = budgets.reduce((acc, b) => acc + b.effective_budget, 0);
@@ -146,10 +189,31 @@ export default function BudgetPage() {
 
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Category Budgets</h2>
-        <Button onClick={handleAddNew} className="h-11 sm:h-9">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Budget
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={isSelectMode ? "secondary" : "outline"}
+            onClick={() => {
+              setIsSelectMode(!isSelectMode);
+              clearSelection();
+            }}
+            className="h-11 sm:h-9"
+          >
+            {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
+            <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsCopyDialogOpen(true)}
+            className="h-11 sm:h-9"
+          >
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Copy Last Month</span>
+          </Button>
+          <Button onClick={handleAddNew} className="h-11 sm:h-9">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Budget
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -171,6 +235,9 @@ export default function BudgetPage() {
               velocityStatus={velocities[budget.id]?.velocityStatus}
               onEdit={handleEdit}
               onDelete={setDeletingId}
+              isSelectMode={isSelectMode}
+              isSelected={isSelected(budget.id)}
+              onToggleSelect={toggleSelection}
             />
           ))}
         </div>
@@ -181,6 +248,15 @@ export default function BudgetPage() {
         onOpenChange={setIsFormOpen}
         categories={categories}
         existingBudget={editingBudget}
+        selectedMonth={month}
+        selectedYear={year}
+        onSuccess={fetchBudgets}
+        onCategoryCreated={handleCategoryCreated}
+      />
+
+      <CopyLastMonthDialog
+        open={isCopyDialogOpen}
+        onOpenChange={setIsCopyDialogOpen}
         selectedMonth={month}
         selectedYear={year}
         onSuccess={fetchBudgets}
@@ -199,6 +275,55 @@ export default function BudgetPage() {
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Sticky Bar */}
+      {isSelectMode && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t shadow-lg z-50 flex items-center justify-between sm:justify-center sm:gap-8">
+          <div className="flex items-center gap-4">
+            <Checkbox
+              id="select-all-mobile"
+              checked={isAllSelected(budgets.map(b => b.id))}
+              onCheckedChange={(checked) => {
+                if (checked) selectAll(budgets.map(b => b.id));
+                else clearSelection();
+              }}
+            />
+            <span className="font-medium">
+              {selectedIds.size} selected
+            </span>
+          </div>
+          <Button
+            variant="destructive"
+            disabled={selectedIds.size === 0}
+            onClick={() => setShowBulkDeleteConfirm(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} budgets?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected category budgets.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <Button 
+              variant="destructive" 
+              onClick={handleBulkDelete} 
+              disabled={isBulkDeleting}
+            >
+              {isBulkDeleting ? "Deleting..." : "Delete"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

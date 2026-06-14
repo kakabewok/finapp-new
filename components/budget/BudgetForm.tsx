@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Category, BudgetSummary } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { getIcon } from "@/lib/icons";
+import { CategorySelector } from "@/components/ui/CategorySelector";
 
 interface BudgetFormProps {
   open: boolean;
@@ -26,22 +27,34 @@ interface BudgetFormProps {
   selectedMonth: number;
   selectedYear: number;
   onSuccess: () => void;
+  onCategoryCreated?: (category: Category) => void;
 }
 
-export function BudgetForm({ open, onOpenChange, categories, existingBudget, selectedMonth, selectedYear, onSuccess }: BudgetFormProps) {
+export function BudgetForm({ open, onOpenChange, categories, existingBudget, selectedMonth, selectedYear, onSuccess, onCategoryCreated }: BudgetFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [categoryId, setCategoryId] = useState(existingBudget?.category_id || "");
   const [amount, setAmount] = useState(existingBudget?.budget_amount?.toString() || "");
   const [rolloverEnabled, setRolloverEnabled] = useState((existingBudget as any)?.rollover_enabled || false);
 
   // Reset form when opened with new data
-  useState(() => {
+  useEffect(() => {
     if (open) {
       setCategoryId(existingBudget?.category_id || "");
       setAmount(existingBudget?.budget_amount?.toString() || "");
       setRolloverEnabled((existingBudget as any)?.rollover_enabled || false);
+    } else if (!existingBudget) {
+      // Clear form when closing if it was a new budget
+      setCategoryId("");
+      setAmount("");
+      setRolloverEnabled(false);
     }
-  });
+  }, [open, existingBudget]);
+
+  const resetForm = () => {
+    setCategoryId("");
+    setAmount("");
+    setRolloverEnabled(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +69,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
       const method = existingBudget ? "PATCH" : "POST";
       
       const payload = existingBudget ? {
+        category_id: categoryId,
         amount: parseFloat(amount),
         rollover_enabled: rolloverEnabled
       } : {
@@ -78,6 +92,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
       }
 
       toast.success(existingBudget ? "Budget updated" : "Budget created");
+      resetForm();
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -97,42 +112,39 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {!existingBudget && (
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.filter(c => c.type === 'expense' || c.type === 'both').map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <span className="flex items-center gap-2">
-                        {(() => {
-                          const IconComponent = getIcon(category.icon);
-                          return <IconComponent size={14} className="text-muted-foreground" />;
-                        })()}
-                        {category.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelector
+                categories={categories}
+                value={categoryId}
+                onChange={setCategoryId}
+                onCategoryCreated={onCategoryCreated}
+                filterType="expense"
+                placeholder="Select category"
+              />
             </div>
-          )}
           
           <div className="space-y-2">
             <Label htmlFor="amount">Budget Amount (IDR)</Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="e.g. 1000000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0"
-              step="1000"
-              required
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-muted-foreground font-medium select-none pointer-events-none">
+                Rp
+              </span>
+              <Input
+                id="amount"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="pl-9 text-base font-semibold"
+                placeholder="e.g. 1.000.000"
+                value={amount ? (amount.includes(".") ? amount : new Intl.NumberFormat("id-ID").format(parseInt(amount.replace(/\D/g, "") || "0", 10))) : ""}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, "");
+                  setAmount(raw);
+                }}
+                required
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-4">

@@ -32,7 +32,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch budgets" }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    // Fetch raw budgets to get created_at for this user, month, and year
+    const { data: rawBudgets } = await supabase
+      .from("budgets")
+      .select("id, created_at")
+      .eq("user_id", user.id)
+      .eq("month", month)
+      .eq("year", year);
+
+    const budgetMap = new Map(rawBudgets?.map(b => [b.id, b.created_at]) || []);
+    const enrichedData = data.map(item => ({
+      ...item,
+      created_at: budgetMap.get(item.id) || null
+    }));
+
+    return NextResponse.json(enrichedData);
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
