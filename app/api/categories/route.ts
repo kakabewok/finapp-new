@@ -52,6 +52,20 @@ export async function POST(request: Request) {
     // Validate request body
     const validatedData = categorySchema.parse(body);
 
+    // Check for duplicate category name case-insensitively for this user
+    const { data: existing, error: checkError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("user_id", user.id)
+      .ilike("name", validatedData.name.trim())
+      .limit(1);
+
+    if (checkError) {
+      console.error("Error checking duplicate category:", checkError);
+    } else if (existing && existing.length > 0) {
+      return NextResponse.json({ error: `Category "${validatedData.name}" already exists` }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from("categories")
       .insert({
@@ -70,7 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
+      return NextResponse.json({ error: error.issues[0]?.message || "Validation error" }, { status: 400 });
     }
     console.error("Unexpected error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

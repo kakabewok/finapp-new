@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,16 +37,30 @@ export function formatCompactNumber(amount: number): string {
 }
 
 /**
- * Format a date string to a human-readable format
+ * Format a date string to a human-readable format, supporting timezone adjustment (WIB UTC+7) and relative formatting.
  */
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
+export function formatDate(
+  date: string | Date | null | undefined, 
+  options?: { relative?: boolean }
+): string {
+  if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    ...options,
-  });
+  if (isNaN(d.getTime())) return "";
+
+  if (options?.relative) {
+    const now = new Date();
+    const diffDays = Math.abs(differenceInDays(now, d));
+    if (diffDays < 7) {
+      return formatDistanceToNow(d, { addSuffix: true });
+    }
+  }
+
+  // Enforce Asia/Jakarta UTC+7 timezone by shifting local time of the Date object
+  const systemOffset = d.getTimezoneOffset() * 60000;
+  const jakartaOffset = 7 * 60 * 60000;
+  const shiftedDate = new Date(d.getTime() + systemOffset + jakartaOffset);
+
+  return format(shiftedDate, 'd MMM yyyy');
 }
 
 /**
@@ -93,4 +108,29 @@ export function stringToColor(str: string): string {
 export function truncate(text: string, maxLength: number = 50): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + "...";
+}
+
+/**
+ * Format a raw value (number or numeric string) into Indonesian format with thousand separator dots (e.g. 50000 -> "50.000")
+ */
+export function formatRupiah(value: number | string | undefined | null): string {
+  if (value === undefined || value === null) return "";
+  const str = typeof value === "number" ? value.toString() : value;
+  // Keep only digits
+  const clean = str.replace(/\D/g, "");
+  if (!clean) return "";
+  
+  // Format with dots as thousand separator
+  return new Intl.NumberFormat("id-ID").format(parseInt(clean, 10));
+}
+
+/**
+ * Parse formatted Indonesian rupiah string back to raw number (e.g. "50.000" -> 50000)
+ */
+export function parseRupiah(formattedString: string | undefined | null): number {
+  if (!formattedString) return 0;
+  // Strip all non-digits
+  const clean = formattedString.replace(/\D/g, "");
+  if (!clean) return 0;
+  return parseInt(clean, 10);
 }

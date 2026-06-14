@@ -12,7 +12,7 @@ export function MobileNav({ currentUser }: { currentUser: any }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 border-b bg-background/95 backdrop-blur-md lg:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 border-b bg-background lg:hidden">
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="h-10 w-10">

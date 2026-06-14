@@ -39,12 +39,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect root to dashboard if authenticated, login if not
-  if (pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = user ? "/dashboard" : "/login";
-    return NextResponse.redirect(url);
-  }
+  // Root path is allowed for all users (Landing Page)
 
   return supabaseResponse;
 }

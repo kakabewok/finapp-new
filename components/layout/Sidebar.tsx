@@ -14,6 +14,7 @@ import {
   User,
   Settings,
   Wallet,
+  Terminal,
 } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { useIsDeveloper } from "@/hooks/useIsDeveloper";
 
 const navItems = [
   {
@@ -59,6 +61,7 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseClient();
+  const isDeveloper = useIsDeveloper(currentUser?.email);
 
   const handleLogout = async () => {
     try {
@@ -72,7 +75,7 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
   };
 
   return (
-    <div className={cn("pb-12 border-r bg-card/50 min-h-screen flex flex-col", className)}>
+    <div className={cn("pb-12 border-r bg-sidebar min-h-screen flex flex-col", className)}>
       <div className="space-y-4 py-4 flex-1">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight flex items-center gap-2">
@@ -100,6 +103,22 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
               );
             })}
             
+            {isDeveloper && (
+              <Button
+                variant={pathname.startsWith("/dev/dashboard") ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  pathname.startsWith("/dev/dashboard") ? "font-medium bg-secondary text-secondary-foreground" : "text-muted-foreground"
+                )}
+                asChild
+              >
+                <Link href="/dev/dashboard">
+                  <Terminal className={cn("mr-2 h-4 w-4", pathname.startsWith("/dev/dashboard") ? "text-primary" : "")} />
+                  Developer Panel
+                </Link>
+              </Button>
+            )}
+
             <Link
               href="#"
               className="relative flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground opacity-60 cursor-not-allowed pointer-events-none"

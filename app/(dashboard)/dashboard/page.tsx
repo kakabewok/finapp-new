@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -42,8 +43,11 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
           <p className="text-muted-foreground mt-1">Your financial summary at a glance.</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
+          <div className="border border-red-500">
+            <InstallPrompt variant="button" />
+          </div>
           <Button variant="outline" size="icon" onClick={fetchDashboardData} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
@@ -77,7 +81,7 @@ export default function DashboardPage() {
       ) : data ? (
         <div className="space-y-6">
           <SummaryCards data={data.summary} />
-          
+
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
             <SpendingTrendChart data={data.trendData} />
             <CategoryBreakdown data={data.categoryBreakdown} />

@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Edit2, Trash2, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { getIcon } from "@/lib/icons";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface BudgetCardProps {
   budget: BudgetSummary;
@@ -13,9 +14,12 @@ interface BudgetCardProps {
   velocityStatus?: string;
   onEdit: (budget: BudgetSummary) => void;
   onDelete: (id: string) => void;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
-export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, onDelete }: BudgetCardProps) {
+export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, onDelete, isSelectMode, isSelected, onToggleSelect }: BudgetCardProps) {
   const isOverbudget = budget.status === "overbudget";
   const isWarning = budget.status === "warning";
 
@@ -24,10 +28,25 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
   else if (isWarning) progressColor = "bg-amber-500";
 
   return (
-    <Card className={`relative overflow-hidden ${isOverbudget ? 'border-rose-500/50 shadow-sm shadow-rose-500/10' : ''}`}>
+    <Card 
+      className={`relative overflow-hidden transition-colors ${isOverbudget ? 'border-rose-500/30' : ''} ${isSelectMode && isSelected ? 'border-primary bg-primary/5' : ''}`}
+      onClick={(e) => {
+        if (isSelectMode && onToggleSelect) {
+          e.preventDefault();
+          onToggleSelect(budget.id);
+        }
+      }}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
+            {isSelectMode && onToggleSelect && (
+              <Checkbox 
+                checked={isSelected} 
+                onCheckedChange={() => onToggleSelect(budget.id)}
+                className="mt-1"
+              />
+            )}
             <CategoryBadge 
               icon={budget.category_icon} 
               color={budget.category_color} 
@@ -41,11 +60,23 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
             </div>
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={() => onEdit(budget)} className="h-8 w-8">
-              <Edit2 className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => onEdit(budget)} 
+              className="h-11 w-11 md:h-8 md:w-8"
+              aria-label="Edit budget"
+            >
+              <Edit2 className="h-5 w-5 md:h-4 md:w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(budget.id)} className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground">
-              <Trash2 className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => onDelete(budget.id)} 
+              className="h-11 w-11 md:h-8 md:w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              aria-label="Delete budget"
+            >
+              <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
             </Button>
           </div>
         </div>
@@ -75,6 +106,12 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
              velocityStatus === 'warning' ? <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> :
              <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />}
             <span>{velocityMessage}</span>
+          </div>
+        )}
+
+        {budget.created_at && (
+          <div className="text-[10px] text-muted-foreground/75 text-right mt-1 pt-1 border-t border-muted-foreground/10">
+            Set: {formatDate(budget.created_at)}
           </div>
         )}
       </CardContent>
