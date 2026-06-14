@@ -45,7 +45,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="border border-red-500">
+          <div>
             <InstallPrompt variant="button" />
           </div>
           <Button variant="outline" size="icon" onClick={fetchDashboardData} disabled={isLoading}>

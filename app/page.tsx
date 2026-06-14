@@ -35,7 +35,7 @@ export default async function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             {user ? (
-              <Button asChild size="sm" className="rounded-full px-5">
+              <Button asChild size="sm" className="rounded-2xl px-5">
                 <Link href="/dashboard">Buka Dashboard</Link>
               </Button>
             ) : (
@@ -43,7 +43,7 @@ export default async function HomePage() {
                 <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
                   Masuk
                 </Link>
-                <Button asChild size="sm" className="rounded-full px-5">
+                <Button asChild size="sm" className="rounded-2xl px-5">
                   <Link href="/register">Daftar</Link>
                 </Button>
               </>
@@ -57,45 +57,43 @@ export default async function HomePage() {
         <section className="pt-24 pb-16 md:pt-32 md:pb-24 px-4 text-center relative">
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-100 via-white to-white dark:from-zinc-900 dark:via-black dark:to-black"></div>
           <div className="container mx-auto max-w-4xl flex flex-col items-center">
-            <div className="inline-flex items-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-1 text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-              Kuasai Keuanganmu Hari Ini
-            </div>
+
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100 text-balance leading-tight">
-              Catat keuanganmu,<br className="hidden sm:block" /> kuasai masa depanmu.
+              {/* Catat keuanganmu,<br className="hidden sm:block" /> kuasai masa depanmu. */}
+              Ubah Kebiasaan <span className="text-primary">Borosmu</span>
             </h1>
             <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 mb-10 max-w-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200 text-balance">
-              SiBoros adalah asisten keuangan pribadi yang membantu kamu mencatat pengeluaran, merencanakan budget, dan memahami kebiasaan finansialmu dengan mudah dan aman.
+              Mulai catat pengeluaran dan kendalikan cashflow kamu sekarang.
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300 w-full sm:w-auto">
               {user ? (
-                <Button asChild size="lg" className="rounded-full w-full sm:w-auto text-base h-12 px-8">
+                <Button asChild size="lg" className="rounded-2xl w-full sm:w-auto text-base h-12 px-8">
                   <Link href="/dashboard">
-                    Lanjut ke Dashboard <ArrowRight className="ml-2 w-4 h-4" />
+                    Dashboard <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
               ) : (
                 <>
-                  <Button asChild size="lg" className="rounded-full w-full sm:w-auto text-base h-12 px-8">
+                  <Button asChild size="lg" className="rounded-2xl w-full sm:w-auto text-base h-12 px-8">
                     <Link href="/register">
-                      Mulai Gratis <ArrowRight className="ml-2 w-4 h-4" />
+                      Yuk, Tobat Finansial! <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>
                   </Button>
-                  <Button asChild variant="outline" size="lg" className="rounded-full w-full sm:w-auto text-base h-12 px-8">
+                  <Button asChild variant="outline" size="lg" className="rounded-2xl w-full sm:w-auto text-base h-12 px-8">
                     <Link href="/login">Masuk ke Akun</Link>
                   </Button>
                 </>
               )}
             </div>
           </div>
-          
+
           {/* Dashboard Mockup Placeholder */}
           <div className="mt-16 md:mt-24 container mx-auto max-w-5xl px-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
             <div className="relative rounded-xl md:rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shadow-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-100/50 to-transparent dark:from-zinc-900/50"></div>
               <div className="text-center z-10 opacity-60">
                 <PieChart className="w-16 h-16 mx-auto mb-4 text-zinc-400" />
-                <p className="text-lg font-medium text-zinc-500">Dashboard Preview</p>
+                <p className="text-lg font-medium text-zinc-500">Dashboard Preview (Soon)</p>
               </div>
             </div>
           </div>
@@ -105,42 +103,42 @@ export default async function HomePage() {
         <section className="py-20 md:py-32 bg-zinc-50 dark:bg-zinc-900/20 border-y border-zinc-200 dark:border-zinc-800">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Fitur Lengkap & Cerdas</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">All-in-One Financial Tracker</h2>
               <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto text-balance">
-                Semua yang kamu butuhkan untuk mengelola keuangan dalam satu aplikasi yang cepat dan responsif.
+                Rekap pengeluaran sampai bikin budget bulanan jadi instan dan responsif.
               </p>
             </div>
-            
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              <FeatureCard 
+              <FeatureCard
                 icon={<Zap className="w-6 h-6 text-yellow-500" />}
-                title="Pencatatan Cepat"
-                description="Catat pemasukan dan pengeluaran dalam hitungan detik. Tersedia juga fitur scan struk otomatis dengan AI."
+                title="Catat Sat-set"
+                description="Input pengeluaran cuma butuh hitungan detik. Tinggal foto struk, AI bakal otomatis nyatetin buat kamu."
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<PieChart className="w-6 h-6 text-blue-500" />}
-                title="Budget Planner"
-                description="Buat budget bulanan per kategori dan pantau batas pengeluaranmu. Praktis bisa copy dari bulan lalu!"
+                title="Budgeting Santai"
+                description="Atur batas jajan per kategori biar gak boncos. Malas set up? Tinggal copy aja dari budget bulan lalu!"
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<Tags className="w-6 h-6 text-green-500" />}
-                title="Kategori Kustom"
-                description="Buat kategori tak terbatas dengan lebih dari 30+ ikon dan warna pilihan yang menyesuaikan kebutuhanmu."
+                title="Kategori Bebas"
+                description="Bikin kategori sesukamu pakai 30+ pilihan ikon dan warna yang pas dengan gaya pengeluaranmu."
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<Smartphone className="w-6 h-6 text-purple-500" />}
-                title="Bisa Diinstall (PWA)"
-                description="Akses SiBoros layaknya aplikasi native di HP kamu tanpa perlu ribet download dari App Store."
+                title="Instal Tanpa Ribet"
+                description="Akses SiBoros langsung dari layar HP layaknya aplikasi biasa tanpa perlu pusing download di App Store."
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<LineChart className="w-6 h-6 text-indigo-500" />}
-                title="Insight Keuangan"
-                description="Laporan visual yang mudah dipahami untuk menganalisa tren pengeluaran dan laju tabungan bulananmu."
+                title="Pantau Cashflow"
+                description="Lihat ke mana perginya duitmu lewat grafik visual yang simpel, transparan, dan gampang dipahami."
               />
-              <FeatureCard 
+              <FeatureCard
                 icon={<ShieldCheck className="w-6 h-6 text-rose-500" />}
                 title="Aman & Privat"
-                description="Data kamu tersimpan aman di cloud database dengan enkripsi tingkat tinggi dari infrastruktur kelas enterprise."
+                description="Data keuanganmu dikunci aman di cloud dengan enkripsi standar enterprise. Privasimu terjaga total."
               />
             </div>
           </div>
@@ -149,34 +147,36 @@ export default async function HomePage() {
         {/* How It Works Section */}
         <section className="py-20 md:py-32">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-16">Mudah Digunakan, Tanpa Ribet</h2>
-            
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-16">3 Langkah Berbenah Finansial</h2>
+
             <div className="grid md:grid-cols-3 gap-12 relative">
               <div className="hidden md:block absolute top-8 left-[16%] right-[16%] h-px bg-gradient-to-r from-zinc-200 via-primary/50 to-zinc-200 dark:from-zinc-800 dark:via-primary/50 dark:to-zinc-800 -z-10"></div>
-              
-              <Step 
+
+              <Step
                 number="1"
-                title="Daftar Gratis"
-                description="Buat akun dalam hitungan detik. Tidak perlu kartu kredit atau pengisian data pribadi yang rumit."
+                title="Bikin Akun Instan"
+                description="Daftar dalam hitungan detik. Tanpa syarat kartu kredit, langsung masuk tanpa ribet."
               />
-              <Step 
+              <Step
                 number="2"
-                title="Catat Transaksi"
-                description="Mulai catat setiap pemasukan dan pengeluaranmu ke dalam kategori yang tepat setiap hari."
+                title="Catat Pengeluaran"
+                description="Tinggal ketik nominal atau scan struk, AI bakal otomatis nyatet buat kamu."
               />
-              <Step 
+              <Step
                 number="3"
-                title="Lihat Insight"
-                description="SiBoros akan otomatis mengolah datamu menjadi laporan visual yang mempermudah evaluasi."
+                title="Pantau Hasilnya"
+                description="Bikin laporan dan dapat insight dari AI biar makin mantap ngatur duitnya."
               />
             </div>
           </div>
         </section>
 
         {/* Kelebihan & Kekurangan Section */}
-        <section className="py-20 md:py-32 bg-zinc-900 text-zinc-50 dark:bg-zinc-950/80 border-t border-zinc-800">
+        <section className="py-20 px-5 md:py-32 bg-zinc-900 text-zinc-50 dark:bg-zinc-950/80 border-t border-zinc-800">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-24">
+
+              {/* Sisi Kiri: Kelebihan */}
               <div>
                 <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
                   <CheckCircle2 className="text-green-400 w-6 h-6" /> Mengapa SiBoros?
@@ -184,45 +184,40 @@ export default async function HomePage() {
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">100% Gratis digunakan untuk seluruh fitur pencatatan utama.</span>
+                    <span className="text-zinc-300 leading-relaxed">UI bersih, sat-set, dan gak ada iklan yang bikin emosi.</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Antarmuka sangat bersih, cepat, dan tidak memuat iklan yang mengganggu.</span>
+                    <span className="text-zinc-300 leading-relaxed">Aman dibuka dari mana aja (HP, laptop, atau tablet).</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Sangat responsif di semua perangkat (Desktop, Tablet, HP).</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Dikembangkan secara aktif dan terbuka terhadap masukan pengguna.</span>
+                    <span className="text-zinc-300 leading-relaxed">Terbuka banget buat dengerin masukan/request fitur dari kalian.</span>
                   </li>
                 </ul>
               </div>
-              
+
+              {/* Sisi Kanan: Roadmap / Apa yang Lagi Dikerjain */}
               <div>
                 <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <AlertCircle className="text-blue-400 w-6 h-6" /> Yang Sedang Dikembangkan
+                  <AlertCircle className="text-blue-400 w-6 h-6" /> Yang Lagi Dipersiapkan
                 </h3>
-                <p className="text-zinc-400 mb-6 leading-relaxed">
-                  Kami jujur, SiBoros masih dalam tahap pertumbuhan. Beberapa fungsionalitas lanjutan masih dalam roadmap kami:
-                </p>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Akurasi scan struk menggunakan AI (Gemini) masih terus ditingkatkan agar lebih presisi.</span>
+                    <span className="text-zinc-300 leading-relaxed">
+                      Upgrade Model AI: Bakal pakai AI yang jauh lebih akurat buat baca struk.
+                    </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Integrasi mutasi perbankan otomatis (Coming Soon).</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2.5 shrink-0"></span>
-                    <span className="text-zinc-300 leading-relaxed">Fitur export laporan ke PDF dan Excel tingkat lanjut.</span>
+                    <span className="text-zinc-300 leading-relaxed">
+                      Multi-Dompet: Fitur buat misahin saldo rekening bank, e-wallet, dan uang kas fisik biar gak kecampur.
+                    </span>
                   </li>
                 </ul>
               </div>
+
             </div>
           </div>
         </section>
@@ -230,13 +225,13 @@ export default async function HomePage() {
         {/* CTA Bottom Section */}
         <section className="py-24 md:py-40 text-center">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Mulai Atur Uangmu Sekarang</h2>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Siap Tobat Finansial?</h2>
             <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-10 max-w-xl mx-auto">
-              Bergabunglah dan ambil kendali penuh atas masa depan finansialmu. Mudah, cepat, dan tanpa biaya tersembunyi.
+              Jangan tunggu sampai dompet kritis baru mulai mencatat. Ambil kendali penuh atas keuanganmu sekarang!
             </p>
             <Button asChild size="lg" className="rounded-full text-base h-14 px-10 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-[1.02]">
               <Link href="/register">
-                Mulai Gratis Hari Ini <ArrowRight className="ml-2 w-5 h-5" />
+                Gas Nyatet <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
           </div>
@@ -252,9 +247,22 @@ export default async function HomePage() {
               <span className="font-semibold text-zinc-500">SiBoros</span>
             </div>
             <div className="flex gap-6 text-sm text-zinc-500 font-medium">
-              <Link href="#" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Privacy Policy</Link>
-              <Link href="#" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Terms of Service</Link>
-              <Link href="#" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Contact</Link>
+              <Link
+                href="https://www.threads.com/_kkbwk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              >
+                Threads
+              </Link>
+              <Link
+                href="https://www.instagram.com/_kkbwk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              >
+                Instagram
+              </Link>
             </div>
           </div>
           <div className="mt-8 text-center text-sm text-zinc-400">
