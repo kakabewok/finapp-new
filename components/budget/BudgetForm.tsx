@@ -67,7 +67,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
     try {
       const url = existingBudget ? `/api/budgets/${existingBudget.id}` : "/api/budgets";
       const method = existingBudget ? "PATCH" : "POST";
-      
+
       const payload = existingBudget ? {
         category_id: categoryId,
         amount: parseFloat(amount),
@@ -112,18 +112,18 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <CategorySelector
-                categories={categories}
-                value={categoryId}
-                onChange={setCategoryId}
-                onCategoryCreated={onCategoryCreated}
-                filterType="expense"
-                placeholder="Select category"
-              />
-            </div>
-          
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <CategorySelector
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+              onCategoryCreated={onCategoryCreated}
+              filterType="expense"
+              placeholder="Select category"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="amount">Budget Amount (IDR)</Label>
             <div className="relative">
@@ -134,7 +134,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
                 id="amount"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
+                // pattern="[0-9]*"
                 className="pl-9 text-base font-semibold"
                 placeholder="e.g. 1.000.000"
                 value={amount ? (amount.includes(".") ? amount : new Intl.NumberFormat("id-ID").format(parseInt(amount.replace(/\D/g, "") || "0", 10))) : ""}

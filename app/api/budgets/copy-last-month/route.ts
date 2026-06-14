@@ -12,17 +12,26 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const currentMonth = parseInt(searchParams.get("month") || "");
     const currentYear = parseInt(searchParams.get("year") || "");
+    const sourceMonthParam = searchParams.get("sourceMonth");
+    const sourceYearParam = searchParams.get("sourceYear");
 
     if (isNaN(currentMonth) || isNaN(currentYear)) {
       return NextResponse.json({ error: "month and year are required" }, { status: 400 });
     }
 
-    // Calculate previous month
+    // Determine the source month/year to copy from
     let prevMonth = currentMonth - 1;
     let prevYear = currentYear;
-    if (prevMonth < 1) {
-      prevMonth = 12;
-      prevYear -= 1;
+    
+    if (sourceMonthParam && sourceYearParam) {
+      prevMonth = parseInt(sourceMonthParam);
+      prevYear = parseInt(sourceYearParam);
+    } else {
+      // Fallback to previous month
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+      }
     }
 
     // Fetch previous month's budgets with category details

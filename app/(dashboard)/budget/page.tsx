@@ -209,7 +209,7 @@ export default function BudgetPage() {
             className="h-11 sm:h-9"
           >
             <Copy className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Copy Last Month</span>
+            <span className="hidden sm:inline">Copy from...</span>
           </Button>
           <Button onClick={handleAddNew} className="h-11 sm:h-9">
             <Plus className="mr-2 h-4 w-4" />

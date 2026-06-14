@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Copy, X, AlertCircle } from "lucide-react";
 import {
   Dialog,
@@ -52,20 +53,47 @@ export function CopyLastMonthDialog({
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [prevMonthLabel, setPrevMonthLabel] = useState("");
   const [hasFetched, setHasFetched] = useState(false);
+  const [availableMonths, setAvailableMonths] = useState<{ month: number; year: number }[]>([]);
+  const [sourceMonth, setSourceMonth] = useState<number | null>(null);
+  const [sourceYear, setSourceYear] = useState<number | null>(null);
+  const [isFetchingMonths, setIsFetchingMonths] = useState(false);
 
-  const fetchPreviousMonth = async () => {
+  const fetchAvailableMonths = async () => {
+    setIsFetchingMonths(true);
+    try {
+      const res = await fetch("/api/budgets/available-months");
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableMonths(data.availableMonths || []);
+        if (data.availableMonths && data.availableMonths.length > 0) {
+          const latest = data.availableMonths[0];
+          setSourceMonth(latest.month);
+          setSourceYear(latest.year);
+          fetchSourceMonth(latest.month, latest.year);
+        } else {
+          setHasFetched(true);
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to load available months");
+    } finally {
+      setIsFetchingMonths(false);
+    }
+  };
+
+  const fetchSourceMonth = async (sMonth: number, sYear: number) => {
     setIsLoading(true);
     setHasFetched(false);
     try {
       const res = await fetch(
-        `/api/budgets/copy-last-month?month=${selectedMonth}&year=${selectedYear}`
+        `/api/budgets/copy-last-month?month=${selectedMonth}&year=${selectedYear}&sourceMonth=${sMonth}&sourceYear=${sYear}`
       );
       if (!res.ok) throw new Error("Failed to fetch");
 
       const data = await res.json();
       setPrevBudgets(data.budgets);
       setPrevMonthLabel(
-        new Date(data.prevYear, data.prevMonth - 1).toLocaleString("default", {
+        new Date(sYear, sMonth - 1).toLocaleString("default", {
           month: "long",
           year: "numeric",
         })
@@ -79,7 +107,7 @@ export function CopyLastMonthDialog({
       setAmounts(initialAmounts);
       setHasFetched(true);
     } catch (error) {
-      toast.error("Failed to fetch last month's budgets");
+      toast.error("Failed to fetch budgets for the selected month");
     } finally {
       setIsLoading(false);
     }
@@ -88,11 +116,13 @@ export function CopyLastMonthDialog({
   // Fetch when dialog opens
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
-      fetchPreviousMonth();
+      fetchAvailableMonths();
     } else {
       setPrevBudgets([]);
       setAmounts({});
       setHasFetched(false);
+      setSourceMonth(null);
+      setSourceYear(null);
     }
     onOpenChange(newOpen);
   };
@@ -168,17 +198,47 @@ export function CopyLastMonthDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Copy className="h-5 w-5" />
-            Copy from Last Month
+            Copy Budget From...
           </DialogTitle>
           <DialogDescription>
-            {prevMonthLabel
-              ? `Copy budget categories from ${prevMonthLabel}. Fill in the amounts you want for the current month.`
-              : "Fetching last month's budget data..."}
+            {isFetchingMonths 
+              ? "Loading available months..."
+              : availableMonths.length > 0
+              ? "Select a past month to copy budget categories from. Fill in the amounts you want for the current month."
+              : "No past budget data available to copy."}
           </DialogDescription>
         </DialogHeader>
 
+        {availableMonths.length > 0 && !isFetchingMonths && (
+          <div className="px-1 pt-2">
+            <Select
+              value={sourceMonth && sourceYear ? `${sourceYear}-${sourceMonth}` : ""}
+              onValueChange={(val) => {
+                const [y, m] = val.split("-").map(Number);
+                setSourceMonth(m);
+                setSourceYear(y);
+                fetchSourceMonth(m, y);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[240px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMonths.map((m) => (
+                  <SelectItem key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+                    {new Date(m.year, m.month - 1).toLocaleString("default", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto py-4 space-y-3 min-h-0">
-          {isLoading ? (
+          {isFetchingMonths || isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
@@ -186,7 +246,7 @@ export function CopyLastMonthDialog({
             <div className="text-center py-12 space-y-3">
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground/30" />
               <p className="text-muted-foreground">
-                No budgets found for the previous month.
+                No budgets found for the selected month.
               </p>
               <p className="text-sm text-muted-foreground/70">
                 Create budgets manually using the &quot;Add Budget&quot; button.
@@ -226,7 +286,7 @@ export function CopyLastMonthDialog({
                       {budget.categories?.name || "Unknown"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Last month: {formatCurrency(budget.amount, "IDR")}
+                      {prevMonthLabel}: {formatCurrency(budget.amount, "IDR")}
                     </p>
                   </div>
                   <Input

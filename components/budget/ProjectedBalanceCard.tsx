@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface ProjectedBalanceCardProps {
   month: number;
@@ -49,10 +50,11 @@ export function ProjectedBalanceCard({ month, year, refreshTrigger }: ProjectedB
   const noBudgetSet = data.totalBudgetAllocated === 0;
 
   return (
-    <Card title="Estimated remaining balance if all budgets this month are fully spent as planned.">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium cursor-help underline decoration-dotted underline-offset-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-1.5">
           Projected Remaining Balance
+          <InfoTooltip text="Estimated remaining balance if all budgets this month are fully spent as planned." />
         </CardTitle>
         <Wallet className="h-4 w-4 text-blue-500" />
       </CardHeader>
