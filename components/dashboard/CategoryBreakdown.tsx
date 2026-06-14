@@ -30,7 +30,7 @@ export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
           </div>
         ) : (
           <div className="h-[300px] w-full flex flex-col">
-            <div className="h-[220px] w-full">
+            <div className="h-[220px] w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -54,7 +54,7 @@ export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
                 </PieChart>
               </ResponsiveContainer>
               {/* Custom center label */}
-              <div className="absolute top-[160px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <p className="text-xs text-muted-foreground">Total</p>
                 <p className="text-sm font-bold">{formatCurrency(totalExpense)}</p>
               </div>

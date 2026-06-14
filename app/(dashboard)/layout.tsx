@@ -31,7 +31,7 @@ export default async function DashboardLayout({
       <div className="lg:pl-64 flex flex-col flex-1">
         {/* Desktop Header — hidden on mobile since we have the top navbar */}
         <div className="hidden lg:block">
-          <Header />
+          <Header currentUser={currentUser} />
         </div>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-6xl w-full">

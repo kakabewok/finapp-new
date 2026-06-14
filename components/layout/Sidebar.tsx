@@ -108,7 +108,7 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
                 </Button>
               );
             })}
-            
+
             {isDeveloper && (
               <Button
                 variant={pathname.startsWith("/dev/dashboard") ? "secondary" : "ghost"}
@@ -148,12 +148,12 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
           </div>
         </div>
       </div>
-      <div className="mt-auto border-t p-3">
+      {/* <div className="mt-auto border-t p-3">
         <div className="flex items-center justify-between">
           <UserMenu user={currentUser} variant="sidebar" />
           <ThemeToggle />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
