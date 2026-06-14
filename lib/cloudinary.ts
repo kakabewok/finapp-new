@@ -45,7 +45,7 @@ export async function uploadToCloudinary(
 }
 
 /**
- * Delete an image from Cloudinary
+ * Delete a single image from Cloudinary.
  */
 export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
   try {
@@ -55,6 +55,41 @@ export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
     console.error("Cloudinary delete error:", error);
     return false;
   }
+}
+
+/**
+ * Delete multiple images from Cloudinary in parallel.
+ *
+ * Uses Promise.allSettled so a single failure never blocks the rest.
+ * Failed deletions are logged with their public_id.
+ *
+ * @returns { succeeded: number; failed: number }
+ */
+export async function deleteCloudinaryImages(
+  publicIds: string[]
+): Promise<{ succeeded: number; failed: number }> {
+  if (publicIds.length === 0) return { succeeded: 0, failed: 0 };
+
+  const results = await Promise.allSettled(
+    publicIds.map((pid) => cloudinary.uploader.destroy(pid))
+  );
+
+  let succeeded = 0;
+  let failed = 0;
+
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      succeeded++;
+    } else {
+      failed++;
+      console.error(
+        `[Cloudinary] Failed to delete image public_id="${publicIds[index]}":`,
+        result.reason
+      );
+    }
+  });
+
+  return { succeeded, failed };
 }
 
 export default cloudinary;

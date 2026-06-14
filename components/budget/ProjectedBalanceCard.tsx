@@ -56,7 +56,7 @@ export function ProjectedBalanceCard({ month, year, refreshTrigger }: ProjectedB
           Projected Remaining Balance
           <InfoTooltip text="Estimated remaining balance if all budgets this month are fully spent as planned." />
         </CardTitle>
-        <Wallet className="h-4 w-4 text-blue-500" />
+        {/* <Wallet className="h-4 w-4 text-blue-500" /> */}
       </CardHeader>
       <CardContent>
         <div className={`text-2xl font-bold ${isNegative ? 'text-rose-500' : 'text-emerald-500'}`}>

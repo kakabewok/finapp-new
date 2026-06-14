@@ -6,11 +6,11 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { getIcon } from "@/lib/icons";
 import { Transaction, Category } from "@/types";
 import { cn } from "@/lib/utils";
-import { 
-  Plus, 
-  Search, 
-  ArrowUpRight, 
-  ArrowDownRight, 
+import {
+  Plus,
+  Search,
+  ArrowUpRight,
+  ArrowDownRight,
   ArrowRightLeft,
   MoreHorizontal,
   Trash2,
@@ -63,7 +63,7 @@ export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -79,7 +79,7 @@ export function TransactionList() {
   // Delete Action
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Bulk Selection
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -117,7 +117,7 @@ export function TransactionList() {
         if (dateFrom) params.append("dateFrom", dateFrom);
         if (dateTo) params.append("dateTo", dateTo);
       }
-      
+
       // Add timestamp to bust browser cache
       params.append("_t", Date.now().toString());
 
@@ -143,13 +143,13 @@ export function TransactionList() {
 
   const handleDelete = async () => {
     if (!transactionToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/transactions/${transactionToDelete}`, {
         method: "DELETE",
       });
-      
+
       if (res.ok) {
         toast.success("Transaction deleted");
         setTransactions(transactions.filter(t => t.id !== transactionToDelete));
@@ -174,7 +174,12 @@ export function TransactionList() {
         body: JSON.stringify({ ids: Array.from(selectedIds) }),
       });
       if (res.ok) {
+        const result = await res.json();
         toast.success(`${selectedIds.size} transactions deleted`);
+        // Non-blocking warning if any receipt images couldn't be cleaned from Cloudinary
+        if (result.warning) {
+          toast.warning(result.warning, { duration: 6000 });
+        }
         fetchTransactions();
         clearSelection();
         setIsSelectMode(false);
@@ -188,6 +193,7 @@ export function TransactionList() {
       setShowBulkDeleteConfirm(false);
     }
   };
+
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -215,7 +221,7 @@ export function TransactionList() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={datePreset} onValueChange={(val) => { 
+          <Select value={datePreset} onValueChange={(val) => {
             setDatePreset(val);
             setPage(1);
             if (val === "This Month") { setDateFrom(format(startOfMonth(new Date()), 'yyyy-MM-dd')); setDateTo(format(endOfMonth(new Date()), 'yyyy-MM-dd')); }
@@ -241,19 +247,19 @@ export function TransactionList() {
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="all">Types</SelectItem>
               <SelectItem value="income">Income</SelectItem>
               <SelectItem value="expense">Expense</SelectItem>
               <SelectItem value="transfer">Transfer</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(1); }}>
             <SelectTrigger className="w-[120px] md:w-[140px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">Categories</SelectItem>
               {categories.map(c => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
@@ -266,15 +272,15 @@ export function TransactionList() {
               setIsSelectMode(!isSelectMode);
               clearSelection();
             }}
-            className="h-11 md:h-9"
+            className="h-9 md:h-9"
           >
             {isSelectMode ? <X className="h-4 w-4 md:mr-2" /> : <ListChecks className="h-4 w-4 md:mr-2" />}
             <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
           </Button>
 
-          <Button asChild className="ml-auto h-11 md:h-9">
+          <Button asChild className="ml-auto h-9 md:h-9">
             <Link href="/transactions/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-0 h-4 w-4" />
               <span className="hidden md:inline">Add Manual</span>
               <span className="md:hidden">Add</span>
             </Link>
@@ -285,16 +291,16 @@ export function TransactionList() {
       {datePreset === "Custom Range" && (
         <div className="flex gap-2 items-center bg-muted/50 p-2 rounded-md border flex-wrap">
           <CalendarIcon className="h-4 w-4 text-muted-foreground ml-2" />
-          <Input 
-            type="date" 
-            value={dateFrom} 
+          <Input
+            type="date"
+            value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             className="w-[140px] md:w-[150px] h-8"
           />
           <span className="text-muted-foreground">to</span>
-          <Input 
-            type="date" 
-            value={dateTo} 
+          <Input
+            type="date"
+            value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
             className="w-[140px] md:w-[150px] h-8"
           />
@@ -371,12 +377,12 @@ export function TransactionList() {
                   </Link>
                 </div>
 
-                <div className="flex items-center pr-2 shrink-0 gap-1">
+                <div className="flex flex-col items-center justify-center shrink-0 gap-1">
                   <Button
                     asChild
                     variant="ghost"
                     size="icon"
-                    className="h-11 w-11 text-muted-foreground hover:text-foreground"
+                    className="h-6 w-9 text-muted-foreground hover:text-foreground"
                     aria-label="Edit transaction"
                   >
                     <Link href={`/transactions/${transaction.id}/edit`}>
@@ -386,7 +392,7 @@ export function TransactionList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="h-6 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => setTransactionToDelete(transaction.id)}
                     aria-label="Delete transaction"
                   >
@@ -472,20 +478,19 @@ export function TransactionList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <CategoryBadge 
-                      icon={transaction.category?.icon ?? "MoreHorizontal"} 
-                      color={transaction.category?.color ?? "#6B7280"} 
-                      name={transaction.category?.name ?? "Uncategorized"} 
-                      showName 
-                      size="sm" 
+                    <CategoryBadge
+                      icon={transaction.category?.icon ?? "MoreHorizontal"}
+                      color={transaction.category?.color ?? "#6B7280"}
+                      name={transaction.category?.name ?? "Uncategorized"}
+                      showName
+                      size="sm"
                     />
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                     {formatDate(transaction.transaction_date)}
                   </TableCell>
-                  <TableCell className={`text-right font-semibold ${
-                    transaction.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : ''
-                  }`}>
+                  <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : ''
+                    }`}>
                     {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}
                     {formatCurrency(transaction.amount, transaction.currency)}
                   </TableCell>
@@ -506,7 +511,7 @@ export function TransactionList() {
                           <Link href={`/transactions/${transaction.id}/edit`}>Edit</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
                           onClick={() => setTransactionToDelete(transaction.id)}
                         >
@@ -592,9 +597,9 @@ export function TransactionList() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete} 
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete"}
@@ -614,9 +619,9 @@ export function TransactionList() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
-            <Button 
-              variant="destructive" 
-              onClick={handleBulkDelete} 
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
               disabled={isBulkDeleting}
             >
               {isBulkDeleting ? "Deleting..." : "Delete"}

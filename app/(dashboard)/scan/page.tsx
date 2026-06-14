@@ -70,7 +70,7 @@ export default function ScanPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            AI Receipt Scanner <Sparkles className="h-6 w-6 text-primary" />
+            Receipt Scanner
           </h1>
           <p className="text-muted-foreground mt-1">
             Upload a receipt and let our AI extract the details for you.
@@ -85,10 +85,10 @@ export default function ScanPage() {
       </div>
 
       {!scanResult ? (
-        <ReceiptUploader 
-          onScanComplete={setScanResult} 
-          isLoading={isLoading} 
-          setIsLoading={setIsLoading} 
+        <ReceiptUploader
+          onScanComplete={setScanResult}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
         />
       ) : (
         <div className="grid gap-6 md:grid-cols-12 items-start">
@@ -101,16 +101,16 @@ export default function ScanPage() {
               <CardContent>
                 <div className="relative aspect-auto max-h-[500px] w-full rounded-lg overflow-hidden border bg-muted/20">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={scanResult.receiptUrl} 
-                    alt="Scanned Receipt" 
+                  <img
+                    src={scanResult.receiptUrl}
+                    alt="Scanned Receipt"
                     className="object-contain w-full h-full"
                   />
                 </div>
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="md:col-span-8">
             <Card>
               <CardHeader>
@@ -120,7 +120,7 @@ export default function ScanPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TransactionForm 
+                <TransactionForm
                   initialData={getInitialData()}
                   isEdit={false}
                 />

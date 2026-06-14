@@ -27,18 +27,18 @@ import {
 export default function BudgetPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  
+
   const [budgets, setBudgets] = useState<BudgetSummary[]>([]);
   const [velocities, setVelocities] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<Category[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<BudgetSummary | null>(null);
-  
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -52,7 +52,7 @@ export default function BudgetPage() {
         fetch(`/api/budgets/velocity?month=${month}&year=${year}`),
         fetch(`/api/categories`)
       ]);
-      
+
       if (budgetsRes.ok) setBudgets(await budgetsRes.json());
       if (catRes.ok) setCategories(await catRes.json());
       if (velocityRes.ok) {
@@ -143,7 +143,7 @@ export default function BudgetPage() {
           <h1 className="text-3xl font-bold tracking-tight">Budget Planner</h1>
           <p className="text-muted-foreground mt-1">Manage your monthly spending limits.</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
             <SelectTrigger className="w-[140px]">
@@ -157,7 +157,7 @@ export default function BudgetPage() {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Year" />
@@ -198,7 +198,7 @@ export default function BudgetPage() {
               setIsSelectMode(!isSelectMode);
               clearSelection();
             }}
-            className="h-11 sm:h-9"
+            className="h-9 sm:h-9"
           >
             {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
             <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
@@ -206,13 +206,13 @@ export default function BudgetPage() {
           <Button
             variant="outline"
             onClick={() => setIsCopyDialogOpen(true)}
-            className="h-11 sm:h-9"
+            className="h-9 sm:h-9"
           >
             <Copy className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Copy from...</span>
           </Button>
-          <Button onClick={handleAddNew} className="h-11 sm:h-9">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={handleAddNew} className="h-9 sm:h-9">
+            <Plus className=" h-4 w-4" />
             Add Budget
           </Button>
         </div>
@@ -319,9 +319,9 @@ export default function BudgetPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
-            <Button 
-              variant="destructive" 
-              onClick={handleBulkDelete} 
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
               disabled={isBulkDeleting}
             >
               {isBulkDeleting ? "Deleting..." : "Delete"}

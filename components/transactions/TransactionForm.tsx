@@ -213,9 +213,9 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
               <FormItem>
                 <FormLabel>Amount</FormLabel>
                 <FormControl>
-                  <AmountInput 
-                    value={field.value} 
-                    onChange={field.onChange} 
+                  <AmountInput
+                    value={field.value}
+                    onChange={field.onChange}
                     placeholder="0"
                   />
                 </FormControl>
@@ -293,7 +293,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
               <FormItem>
                 <FormLabel>Payment Method</FormLabel>
                 <FormControl>
-                  <Input placeholder="Cash, Credit Card, Bank Transfer..." {...field} />
+                  <Input placeholder="Cash, Qris, Bank Transfer..." {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -341,7 +341,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
                 {showFeeBreakdown ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </Button>
             </div>
-            
+
             {showFeeBreakdown && (
               <div className="space-y-4 pt-4 border-t mt-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -424,7 +424,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
-                                    <Input placeholder="Fee name (e.g. Platform Fee)" {...field} />
+                                    <Input placeholder="Fee name" {...field} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
