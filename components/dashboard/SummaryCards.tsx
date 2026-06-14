@@ -2,6 +2,7 @@ import { DashboardSummary } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownIcon, ArrowUpIcon, DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 
 export function SummaryCards({ data }: { data: DashboardSummary }) {
   const getChangeColor = (change: number, isExpense: boolean = false) => {
@@ -18,7 +19,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Total Balance Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -76,6 +77,9 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Projected Balance Card */}
+      <ProjectedBalanceCard month={new Date().getMonth() + 1} year={new Date().getFullYear()} />
     </div>
   );
 }

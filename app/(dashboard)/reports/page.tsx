@@ -5,6 +5,7 @@ import { ReportData, AIInsight } from "@/types";
 import { ReportSummary } from "@/components/reports/ReportSummary";
 import { AIInsightCards } from "@/components/reports/AIInsightCards";
 import { FinancialReportPDF } from "@/components/reports/PDFDocument";
+import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, RefreshCw, Zap } from "lucide-react";
@@ -183,6 +184,7 @@ export default function ReportsPage() {
 
       {reportData && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <ProjectedBalanceCard month={month} year={year} />
           <ReportSummary data={reportData} />
           
           <div className="flex flex-col space-y-4">

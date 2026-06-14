@@ -5,6 +5,7 @@ import { BudgetSummary, Category } from "@/types";
 import { BudgetCard } from "@/components/budget/BudgetCard";
 import { BudgetForm } from "@/components/budget/BudgetForm";
 import { CopyLastMonthDialog } from "@/components/budget/CopyLastMonthDialog";
+import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, ListChecks, X, Trash2, Copy } from "lucide-react";
@@ -170,7 +171,7 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
           <p className="text-sm font-medium text-muted-foreground">Total Budget</p>
           <p className="text-2xl font-bold mt-2">{formatCurrency(totalBudget, "IDR")}</p>
@@ -185,6 +186,7 @@ export default function BudgetPage() {
             {formatCurrency(totalRemaining, "IDR")}
           </p>
         </div>
+        <ProjectedBalanceCard month={month} year={year} refreshTrigger={budgets} />
       </div>
 
       <div className="flex justify-between items-center">

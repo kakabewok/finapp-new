@@ -15,6 +15,7 @@ import {
   Settings,
   Wallet,
   Terminal,
+  BookOpen,
 } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -54,6 +55,11 @@ const navItems = [
     title: "Reports",
     href: "/reports",
     icon: FileText,
+  },
+  {
+    title: "Tutorial",
+    href: "/tutorial",
+    icon: BookOpen,
   },
 ];
 
