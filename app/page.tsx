@@ -40,12 +40,9 @@ export default async function HomePage() {
               </Button>
             ) : (
               <>
-                <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
+                <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors rounded-xl px-6 py-2 bg-slate-900 text-slate-50 dark:bg-slate-50 dark:text-slate-900">
                   Masuk
                 </Link>
-                <Button asChild size="sm" className="rounded-2xl px-5">
-                  <Link href="/register">Daftar</Link>
-                </Button>
               </>
             )}
           </div>
@@ -75,12 +72,9 @@ export default async function HomePage() {
               ) : (
                 <>
                   <Button asChild size="lg" className="rounded-2xl w-full sm:w-auto text-base h-12 px-8">
-                    <Link href="/register">
-                      Yuk, Tobat Finansial! <ArrowRight className="ml-2 w-4 h-4" />
+                    <Link href="/login">
+                      Yuk, Mulai Catat! <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="rounded-2xl w-full sm:w-auto text-base h-12 px-8">
-                    <Link href="/login">Masuk ke Akun</Link>
                   </Button>
                 </>
               )}
@@ -89,7 +83,7 @@ export default async function HomePage() {
 
           {/* Dashboard Mockup Placeholder */}
           <div className="mt-16 md:mt-24 container mx-auto max-w-5xl px-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-            <div className="relative rounded-xl md:rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shadow-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] flex items-center justify-center">
+            <div className="relative rounded-md md:rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shadow-sm overflow-hidden aspect-[16/9] md:aspect-[21/9] flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-100/50 to-transparent dark:from-zinc-900/50"></div>
               <div className="text-center z-10 opacity-60">
                 <PieChart className="w-16 h-16 mx-auto mb-4 text-zinc-400" />
@@ -147,7 +141,7 @@ export default async function HomePage() {
         {/* How It Works Section */}
         <section className="py-20 md:py-32">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-16">3 Langkah Berbenah Finansial</h2>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-16">3 Langkah Beresin Cashflow</h2>
 
             <div className="grid md:grid-cols-3 gap-12 relative">
               <div className="hidden md:block absolute top-8 left-[16%] right-[16%] h-px bg-gradient-to-r from-zinc-200 via-primary/50 to-zinc-200 dark:from-zinc-800 dark:via-primary/50 dark:to-zinc-800 -z-10"></div>
@@ -212,28 +206,13 @@ export default async function HomePage() {
                   <li className="flex items-start gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2.5 shrink-0"></span>
                     <span className="text-zinc-300 leading-relaxed">
-                      Multi-Dompet: Fitur buat misahin saldo rekening bank, e-wallet, dan uang kas fisik biar gak kecampur.
+                      Multi-Wallet: Fitur buat misahin saldo rekening bank, e-wallet, dan uang kas fisik biar gak kecampur.
                     </span>
                   </li>
                 </ul>
               </div>
 
             </div>
-          </div>
-        </section>
-
-        {/* CTA Bottom Section */}
-        <section className="py-24 md:py-40 text-center">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Siap Tobat Finansial?</h2>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-10 max-w-xl mx-auto">
-              Jangan tunggu sampai dompet kritis baru mulai mencatat. Ambil kendali penuh atas keuanganmu sekarang!
-            </p>
-            <Button asChild size="lg" className="rounded-full text-base h-14 px-10 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-[1.02]">
-              <Link href="/register">
-                Gas Nyatet <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
           </div>
         </section>
       </main>
@@ -278,7 +257,7 @@ export default async function HomePage() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="p-6 md:p-8 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
+    <div className="p-6 md:p-8 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-50 dark:border-zinc-800 shadow-xs hover:shadow-md transition-shadow">
       <div className="w-12 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-6">
         {icon}
       </div>
