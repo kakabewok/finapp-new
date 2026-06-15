@@ -1,32 +1,51 @@
 "use client";
-
 import { useState, useEffect } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface InstallPromptProps {
   variant?: "banner" | "button";
 }
 
+// Deteksi iOS Safari
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
+
+function isInStandaloneMode() {
+  return (
+    "standalone" in window.navigator &&
+    (window.navigator as any).standalone
+  );
+}
+
 export function InstallPrompt({ variant = "banner" }: InstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
 
   useEffect(() => {
-    // Check if user dismissed it previously
     const hasDismissed = localStorage.getItem("pwa-install-dismissed");
     if (hasDismissed) return;
 
-    // Listen for the beforeinstallprompt event
+    // Kalau sudah running sebagai PWA, tidak perlu tampilkan apapun
+    if (isInStandaloneMode()) return;
+
+    // Cek iOS
+    if (isIOS()) {
+      setIsIosDevice(true);
+      setShowPrompt(true);
+      return; // tidak perlu listen beforeinstallprompt
+    }
+
+    // Android/Chrome/etc
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowPrompt(true);
     };
-
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // If app is successfully installed
     window.addEventListener("appinstalled", () => {
       setShowPrompt(false);
       setDeferredPrompt(null);
@@ -38,17 +57,17 @@ export function InstallPrompt({ variant = "banner" }: InstallPromptProps) {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      alert("Your browser is blocking the automatic install prompt. \n\n• The app might already be installed.\n• You may be in dev mode.\n• On iOS/Safari, you must tap 'Share' -> 'Add to Home Screen'.");
+    if (isIosDevice) {
+      // iOS tidak bisa trigger prompt — instruksinya sudah ditampilkan di UI
       return;
     }
-
+    if (!deferredPrompt) {
+      alert("Install prompt not available. Your browser may not support this feature. Please use Chrome or Edge to install the app.");
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      setShowPrompt(false);
-    }
+    if (outcome === "accepted") setShowPrompt(false);
     setDeferredPrompt(null);
   };
 
@@ -58,6 +77,7 @@ export function InstallPrompt({ variant = "banner" }: InstallPromptProps) {
   };
 
   if (variant === "button") {
+    if (isIosDevice) return null; // atau buka modal instruksi
     return (
       <Button variant="outline" size="sm" onClick={handleInstallClick} className="hidden sm:flex">
         <Download className="mr-2 h-4 w-4" /> Install App
@@ -68,18 +88,28 @@ export function InstallPrompt({ variant = "banner" }: InstallPromptProps) {
   if (!showPrompt) return null;
 
   return (
-    <div className="border border-blue-600 fixed bottom-4 left-4 right-4 z-50 md:bottom-6 md:left-auto md:right-6 md:w-80">
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:bottom-6 md:left-auto md:right-6 md:w-80">
       <div className="bg-card border shadow-lg rounded-xl p-4 flex items-start gap-4">
         <div className="flex-1">
           <h3 className="font-semibold text-sm">Install SiBoros</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            Install this app on your device for quick access and a better experience.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={handleInstallClick} className="w-full">
-              <Download className="mr-2 h-4 w-4" /> Install
-            </Button>
-          </div>
+
+          {isIosDevice ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Tap <Share className="inline h-3 w-3 mx-0.5" /> Share, then select
+              "Add to Home Screen" to install this app.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground mt-1">
+                Install this app on your device for quick access and a better experience.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={handleInstallClick} className="w-full">
+                  <Download className="mr-2 h-4 w-4" /> Install
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         <button
           onClick={handleDismiss}
