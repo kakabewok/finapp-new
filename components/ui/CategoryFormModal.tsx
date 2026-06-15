@@ -52,8 +52,8 @@ export function CategoryFormModal({
     if (open) {
       if (mode === "edit" && initialData) {
         setNewName(initialData.name);
-        setNewIcon(initialData.icon);
-        setNewColor(initialData.color);
+        setNewIcon(initialData.icon || "Tag");
+        setNewColor(initialData.color || "#6b7280");
         setNewType(initialData.type as any);
       } else {
         resetForm();
@@ -83,12 +83,12 @@ export function CategoryFormModal({
       toast.error("Category name is required");
       return;
     }
-    
+
     // Client-side duplicate check
     const isDuplicate = categories.some(
-      (c) => c.name.toLowerCase() === newName.trim().toLowerCase() && 
-             c.id !== initialData?.id &&
-             (c.type === newType || c.type === "both" || newType === "both")
+      (c) => c.name.toLowerCase() === newName.trim().toLowerCase() &&
+        c.id !== initialData?.id &&
+        (c.type === newType || c.type === "both" || newType === "both")
     );
     if (isDuplicate) {
       toast.error(`Category "${newName.trim()}" already exists`);
@@ -126,8 +126,8 @@ export function CategoryFormModal({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen && !isSaving) {
           onOpenChange(false);
