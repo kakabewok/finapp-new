@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -83,12 +84,16 @@ export default async function HomePage() {
 
           {/* Dashboard Mockup Placeholder */}
           <div className="mt-16 md:mt-24 container mx-auto max-w-5xl px-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-            <div className="relative rounded-md md:rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shadow-sm overflow-hidden aspect-[16/9] md:aspect-[21/9] flex items-center justify-center">
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-100/50 to-transparent dark:from-zinc-900/50"></div>
-              <div className="text-center z-10 opacity-60">
-                <PieChart className="w-16 h-16 mx-auto mb-4 text-zinc-400" />
-                <p className="text-lg font-medium text-zinc-500">Dashboard Preview (Soon)</p>
-              </div>
+            <div className="relative rounded-md md:rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shadow-2xl overflow-hidden flex items-center justify-center">
+              <Image 
+                src="https://res.cloudinary.com/dyds3vzub/image/upload/v1781530026/siboros_igkzuw.png"
+                alt="SiBoros dashboard preview showing transaction list and budget summary"
+                width={2560}
+                height={1440}
+                priority
+                className="w-full h-auto object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-100/20 to-transparent dark:from-zinc-900/20 pointer-events-none"></div>
             </div>
           </div>
         </section>
