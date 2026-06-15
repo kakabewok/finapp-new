@@ -7,6 +7,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { getIcon } from "@/lib/icons";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface BudgetCardProps {
   budget: BudgetSummary;
@@ -83,11 +84,23 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm items-center mb-1.5">
             <span>{budget.percentage_used}% spent</span>
-            <span className="font-medium text-muted-foreground">
-              Remaining: {formatCurrency(Math.max(0, budget.remaining_amount), "IDR")}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium text-muted-foreground">
+                Remaining: {formatCurrency(Math.max(0, budget.remaining_amount), "IDR")}
+              </span>
+              {velocityMessage && (
+                <InfoTooltip 
+                  text={velocityMessage}
+                  buttonClassName={`rounded-full p-0.5 ${
+                    velocityStatus === 'overbudget' ? 'text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20' :
+                    velocityStatus === 'warning' ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10 hover:bg-amber-500/20' :
+                    'text-emerald-500 hover:text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20'
+                  }`}
+                />
+              )}
+            </div>
           </div>
           <Progress 
             value={Math.min(100, budget.percentage_used)} 
@@ -95,21 +108,6 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
             indicatorClassName={progressColor} 
           />
         </div>
-
-        {velocityMessage && (
-          <div className={`p-3 rounded-md text-sm flex gap-2 items-start ${
-            velocityStatus === 'overbudget' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' :
-            velocityStatus === 'warning' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          }`}>
-            {velocityStatus === 'overbudget' ? <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" /> :
-             velocityStatus === 'warning' ? <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> :
-             <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />}
-            <span>{velocityMessage}</span>
-          </div>
-        )}
-
-
       </CardContent>
     </Card>
   );
