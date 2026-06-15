@@ -140,7 +140,9 @@ export default function BudgetPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Budget Planner</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year} Budget
+          </h1>
           <p className="text-muted-foreground mt-1">Manage your monthly spending limits.</p>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,16 +57,21 @@ export function CopyLastMonthDialog({
   const [sourceMonth, setSourceMonth] = useState<number | null>(null);
   const [sourceYear, setSourceYear] = useState<number | null>(null);
   const [isFetchingMonths, setIsFetchingMonths] = useState(false);
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
 
   const fetchAvailableMonths = async () => {
     setIsFetchingMonths(true);
     try {
-      const res = await fetch("/api/budgets/available-months");
+      const res = await fetch(`/api/budgets/available-months?_t=${Date.now()}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setAvailableMonths(data.availableMonths || []);
-        if (data.availableMonths && data.availableMonths.length > 0) {
-          const latest = data.availableMonths[0];
+        // Filter out the current target month so you can't copy a month into itself
+        const filteredMonths = (data.availableMonths || []).filter(
+          (m: { month: number; year: number }) => !(m.month === selectedMonth && m.year === selectedYear)
+        );
+        setAvailableMonths(filteredMonths);
+        if (filteredMonths.length > 0) {
+          const latest = filteredMonths[0];
           setSourceMonth(latest.month);
           setSourceYear(latest.year);
           fetchSourceMonth(latest.month, latest.year);
@@ -86,7 +91,8 @@ export function CopyLastMonthDialog({
     setHasFetched(false);
     try {
       const res = await fetch(
-        `/api/budgets/copy-last-month?month=${selectedMonth}&year=${selectedYear}&sourceMonth=${sMonth}&sourceYear=${sYear}`
+        `/api/budgets/copy-last-month?month=${selectedMonth}&year=${selectedYear}&sourceMonth=${sMonth}&sourceYear=${sYear}&_t=${Date.now()}`,
+        { cache: "no-store" }
       );
       if (!res.ok) throw new Error("Failed to fetch");
 
@@ -99,10 +105,10 @@ export function CopyLastMonthDialog({
         })
       );
 
-      // Initialize amounts as empty strings
+      // Pre-populate amounts with the source month's values
       const initialAmounts: Record<string, string> = {};
       data.budgets.forEach((b: PrevBudgetItem) => {
-        initialAmounts[b.category_id] = "";
+        initialAmounts[b.category_id] = b.amount.toString();
       });
       setAmounts(initialAmounts);
       setHasFetched(true);
@@ -113,37 +119,49 @@ export function CopyLastMonthDialog({
     }
   };
 
-  // Fetch when dialog opens
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
+  // Fetch available months whenever dialog opens
+  useEffect(() => {
+    if (open) {
       fetchAvailableMonths();
     } else {
+      // Reset state when dialog closes
       setPrevBudgets([]);
       setAmounts({});
       setHasFetched(false);
       setSourceMonth(null);
       setSourceYear(null);
+      setAvailableMonths([]);
+      setExcludedIds(new Set());
     }
-    onOpenChange(newOpen);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleAmountChange = (categoryId: string, value: string) => {
     setAmounts((prev) => ({ ...prev, [categoryId]: value }));
   };
 
-  const handleCopyAll = () => {
-    const newAmounts: Record<string, string> = {};
+  const handleResetAmounts = () => {
+    const resetAmounts: Record<string, string> = {};
     prevBudgets.forEach((b) => {
-      newAmounts[b.category_id] = b.amount.toString();
+      resetAmounts[b.category_id] = b.amount.toString();
     });
-    setAmounts(newAmounts);
-    toast.info("Amounts copied from last month");
+    setAmounts(resetAmounts);
+    setExcludedIds(new Set());
+    toast.info("Amounts reset to original values");
+  };
+
+  const handleExcludeItem = (categoryId: string) => {
+    setExcludedIds((prev) => {
+      const next = new Set(prev);
+      next.add(categoryId);
+      return next;
+    });
   };
 
   const handleSave = async () => {
-    // Filter out entries with empty amounts
+    // Filter out excluded and empty entries
     const entriesToSave = prevBudgets.filter(
-      (b) => amounts[b.category_id] && parseFloat(amounts[b.category_id]) > 0
+      (b) => !excludedIds.has(b.category_id) && amounts[b.category_id] && parseFloat(amounts[b.category_id]) > 0
     );
 
     if (entriesToSave.length === 0) {
@@ -180,7 +198,7 @@ export function CopyLastMonthDialog({
       }
 
       onSuccess();
-      handleOpenChange(false);
+      onOpenChange(false);
     } catch (error) {
       toast.error("Failed to save budgets");
     } finally {
@@ -188,12 +206,13 @@ export function CopyLastMonthDialog({
     }
   };
 
-  const filledCount = Object.values(amounts).filter(
-    (v) => v && parseFloat(v) > 0
+  const visibleBudgets = prevBudgets.filter((b) => !excludedIds.has(b.category_id));
+  const filledCount = visibleBudgets.filter(
+    (b) => amounts[b.category_id] && parseFloat(amounts[b.category_id]) > 0
   ).length;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -201,11 +220,11 @@ export function CopyLastMonthDialog({
             Copy Budget From...
           </DialogTitle>
           <DialogDescription>
-            {isFetchingMonths 
+            {isFetchingMonths
               ? "Loading available months..."
               : availableMonths.length > 0
-              ? "Select a past month to copy budget categories from. Fill in the amounts you want for the current month."
-              : "No past budget data available to copy."}
+                ? "Amounts are pre-filled from the selected month. Edit any values below, then confirm to copy."
+                : "No past budget data available to copy."}
           </DialogDescription>
         </DialogHeader>
 
@@ -255,26 +274,26 @@ export function CopyLastMonthDialog({
           ) : (
             <>
               {/* Quick action: Copy all amounts */}
-              {prevBudgets.length > 0 && (
+              {visibleBudgets.length > 0 && (
                 <div className="flex items-center justify-between pb-2 border-b">
                   <span className="text-sm text-muted-foreground">
-                    {prevBudgets.length} categories from {prevMonthLabel}
+                    {visibleBudgets.length} of {prevBudgets.length} categories from {prevMonthLabel}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleCopyAll}
+                    onClick={handleResetAmounts}
                     className="text-xs h-7"
                   >
-                    Copy all amounts too
+                    Reset all
                   </Button>
                 </div>
               )}
 
-              {prevBudgets.map((budget) => (
+              {visibleBudgets.map((budget) => (
                 <div
                   key={budget.category_id}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group"
                 >
                   <CategoryBadge
                     icon={budget.categories?.icon}
@@ -296,25 +315,34 @@ export function CopyLastMonthDialog({
                     onChange={(e) =>
                       handleAmountChange(budget.category_id, e.target.value)
                     }
-                    className="w-[140px] text-right"
+                    className="w-[120px] text-right"
                     min="0"
                     step="1000"
                   />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleExcludeItem(budget.category_id)}
+                    aria-label={`Remove ${budget.categories?.name || "item"}`}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </>
           )}
         </div>
 
-        {prevBudgets.length > 0 && (
+        {visibleBudgets.length > 0 && (
           <DialogFooter className="flex-row justify-between sm:justify-between gap-2 border-t pt-4">
             <span className="text-sm text-muted-foreground self-center">
-              {filledCount} of {prevBudgets.length} filled
+              {filledCount} of {visibleBudgets.length} filled
             </span>
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => handleOpenChange(false)}
+                onClick={() => onOpenChange(false)}
                 disabled={isSaving}
               >
                 Cancel
@@ -329,7 +357,7 @@ export function CopyLastMonthDialog({
                     Saving...
                   </>
                 ) : (
-                  `Save ${filledCount} Budget${filledCount !== 1 ? "s" : ""}`
+                  `Confirm ${filledCount} Budget${filledCount !== 1 ? "s" : ""}`
                 )}
               </Button>
             </div>
