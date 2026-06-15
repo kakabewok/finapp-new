@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from "recharts";
+import { chartTheme } from "@/lib/chart-theme";
 
 export function ReportSummary({ data }: { data: ReportData }) {
   return (
@@ -58,11 +59,15 @@ export function ReportSummary({ data }: { data: ReportData }) {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.dailyTrend}>
-                <XAxis dataKey="date" tickFormatter={(val) => val.split('-')[2]} />
+                <XAxis dataKey="date" tickFormatter={(val) => val.split('-')[2]} tick={chartTheme.axis} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip 
                   formatter={(value: any) => formatCurrency(value || 0, 'IDR')}
                   labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={chartTheme.tooltip.contentStyle}
+                  itemStyle={chartTheme.tooltip.itemStyle}
+                  labelStyle={chartTheme.tooltip.labelStyle}
+                  cursor={chartTheme.tooltip.cursor}
                 />
                 <Bar dataKey="amount" fill="#f43f5e" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -91,7 +96,12 @@ export function ReportSummary({ data }: { data: ReportData }) {
                       <Cell key={`cell-${index}`} fill={entry.color || '#cbd5e1'} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: any) => formatCurrency(value || 0, 'IDR')} />
+                  <Tooltip 
+                    formatter={(value: any) => formatCurrency(value || 0, 'IDR')}
+                    contentStyle={chartTheme.tooltip.contentStyle}
+                    itemStyle={chartTheme.tooltip.itemStyle}
+                    labelStyle={chartTheme.tooltip.labelStyle}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

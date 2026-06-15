@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatCurrency } from "@/lib/utils";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { format, parseISO } from "date-fns";
+import { chartTheme } from "@/lib/chart-theme";
 
 interface TrendData {
   date: string;
@@ -21,7 +22,7 @@ export function IncomeExpenseChart({ data }: { data: TrendData[] }) {
   }));
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="col-span-1 lg:col-span-2 shadow-sm">
       <CardHeader>
         <CardTitle>Income vs Expenses</CardTitle>
         <CardDescription>Daily comparison of your cash flow</CardDescription>
@@ -35,30 +36,30 @@ export function IncomeExpenseChart({ data }: { data: TrendData[] }) {
           <div className="h-[300px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barGap={2} barSize={12}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray={chartTheme.grid.strokeDasharray} vertical={chartTheme.grid.vertical} stroke={chartTheme.grid.stroke} />
                 <XAxis 
                   dataKey="formattedDate" 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  tick={chartTheme.axis}
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  tick={chartTheme.axis}
                   tickFormatter={(value) => `Rp ${value / 1000}k`}
                   width={80}
                 />
                 <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                  cursor={chartTheme.tooltip.cursor}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-card border border-border p-3 rounded-lg shadow-xl">
-                          <p className="font-medium text-sm mb-2">{label}</p>
+                        <div className="bg-card border border-border p-3 rounded-lg shadow-xl text-foreground">
+                          <p className="font-medium text-sm mb-2 text-foreground">{label}</p>
                           {payload.map((entry: any) => (
-                            <div key={entry.name} className="flex items-center justify-between gap-4 text-sm mb-1">
+                            <div key={entry.name} className="flex items-center justify-between gap-4 text-sm mb-1 text-foreground">
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-2 h-2 rounded-full" 
@@ -66,7 +67,7 @@ export function IncomeExpenseChart({ data }: { data: TrendData[] }) {
                                 />
                                 <span className="capitalize text-muted-foreground">{entry.name}</span>
                               </div>
-                              <span className="font-semibold">{formatCurrency(entry.value)}</span>
+                              <span className="font-semibold text-foreground">{formatCurrency(entry.value)}</span>
                             </div>
                           ))}
                         </div>
@@ -77,7 +78,7 @@ export function IncomeExpenseChart({ data }: { data: TrendData[] }) {
                 />
                 <Legend 
                   iconType="circle" 
-                  wrapperStyle={{ paddingTop: '20px' }} 
+                  wrapperStyle={chartTheme.legend.wrapperStyle} 
                   formatter={(value) => <span className="text-sm font-medium text-foreground capitalize">{value}</span>}
                 />
                 <Bar dataKey="income" name="Income" fill="#10B981" radius={[4, 4, 0, 0]} />

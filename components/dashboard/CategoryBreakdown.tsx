@@ -2,23 +2,16 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { getIcon } from "@/lib/icons";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { CategoryBreakdownItem } from "@/types";
+import { chartTheme, getChartColor } from "@/lib/chart-theme";
 
 export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
-  // Use category color or fallback to standard palette
-  const getChartColor = (index: number, customColor?: string) => {
-    if (customColor && customColor.startsWith('#')) return customColor;
-    const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-    return colors[index % colors.length];
-  };
-
   const totalExpense = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <Card className="col-span-1">
+    <Card className="col-span-1 shadow-sm">
       <CardHeader>
         <CardTitle>Expenses by Category</CardTitle>
         <CardDescription>Top spending categories</CardDescription>
@@ -49,7 +42,9 @@ export function CategoryBreakdown({ data }: { data: CategoryBreakdownItem[] }) {
                   </Pie>
                   <Tooltip
                     formatter={(value: any) => formatCurrency(Number(value))}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))' }}
+                    contentStyle={chartTheme.tooltip.contentStyle}
+                    itemStyle={chartTheme.tooltip.itemStyle}
+                    labelStyle={chartTheme.tooltip.labelStyle}
                   />
                 </PieChart>
               </ResponsiveContainer>

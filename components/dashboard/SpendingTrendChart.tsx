@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatCurrency } from "@/lib/utils";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { format, parseISO } from "date-fns";
+import { chartTheme } from "@/lib/chart-theme";
 
 interface TrendData {
   date: string;
@@ -20,7 +21,7 @@ export function SpendingTrendChart({ data }: { data: TrendData[] }) {
   }));
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="col-span-1 lg:col-span-2 shadow-sm">
       <CardHeader>
         <CardTitle>Cash Flow Trend</CardTitle>
         <CardDescription>Income vs expenses over the selected period</CardDescription>
@@ -44,18 +45,18 @@ export function SpendingTrendChart({ data }: { data: TrendData[] }) {
                     <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray={chartTheme.grid.strokeDasharray} vertical={chartTheme.grid.vertical} stroke={chartTheme.grid.stroke} />
                 <XAxis 
                   dataKey="formattedDate" 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  tick={chartTheme.axis}
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  tick={chartTheme.axis}
                   tickFormatter={(value) => `Rp ${value / 1000}k`}
                   width={80}
                 />
@@ -63,16 +64,16 @@ export function SpendingTrendChart({ data }: { data: TrendData[] }) {
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-card border border-border p-3 rounded-lg shadow-xl">
-                          <p className="font-medium text-sm mb-2">{label}</p>
+                        <div className="bg-card border border-border p-3 rounded-lg shadow-xl text-foreground">
+                          <p className="font-medium text-sm mb-2 text-foreground">{label}</p>
                           {payload.map((entry: any) => (
-                            <div key={entry.name} className="flex items-center gap-2 text-sm">
+                            <div key={entry.name} className="flex items-center gap-2 text-sm text-foreground">
                               <div 
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: entry.color }}
                               />
                               <span className="capitalize text-muted-foreground">{entry.name}:</span>
-                              <span className="font-semibold">{formatCurrency(entry.value)}</span>
+                              <span className="font-semibold text-foreground">{formatCurrency(entry.value)}</span>
                             </div>
                           ))}
                         </div>

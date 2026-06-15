@@ -8,16 +8,14 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { chartTheme, CHART_COLORS } from "@/lib/chart-theme";
 
 interface CategoryDistributionChartProps {
   data: { name: string; count: number; color: string }[];
 }
 
 // Fallback palette if categories lack custom colors
-const FALLBACK_COLORS = [
-  "#6366f1", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6",
-  "#06b6d4", "#ec4899", "#84cc16",
-];
+const FALLBACK_COLORS = CHART_COLORS;
 
 export function CategoryDistributionChart({ data }: CategoryDistributionChartProps) {
   if (!data || data.length === 0) {
@@ -52,19 +50,16 @@ export function CategoryDistributionChart({ data }: CategoryDistributionChartPro
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-            fontSize: "13px",
-          }}
+          contentStyle={chartTheme.tooltip.contentStyle}
+          itemStyle={chartTheme.tooltip.itemStyle}
+          labelStyle={chartTheme.tooltip.labelStyle}
           formatter={(value: any, name: any) => [`${value} transactions`, name]}
         />
         <Legend
           layout="vertical"
           align="right"
           verticalAlign="middle"
-          wrapperStyle={{ fontSize: "12px", lineHeight: "20px" }}
+          wrapperStyle={chartTheme.legend.wrapperStyle}
           formatter={(value: string) => (
             <span className="text-foreground">{value}</span>
           )}

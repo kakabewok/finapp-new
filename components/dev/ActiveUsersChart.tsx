@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { chartTheme } from "@/lib/chart-theme";
 
 interface ActiveUsersChartProps {
   data: { date: string; activeUsers: number }[];
@@ -36,31 +37,25 @@ export function ActiveUsersChart({ data }: ActiveUsersChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" vertical={false} />
+        <CartesianGrid strokeDasharray={chartTheme.grid.strokeDasharray} vertical={chartTheme.grid.vertical} stroke={chartTheme.grid.stroke} />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11 }}
-          className="text-muted-foreground"
+          tick={chartTheme.axis}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
         />
         <YAxis
-          tick={{ fontSize: 11 }}
-          className="text-muted-foreground"
+          tick={chartTheme.axis}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
         />
         <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-            fontSize: "13px",
-          }}
-          labelStyle={{ fontWeight: 600 }}
-          cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+          contentStyle={chartTheme.tooltip.contentStyle}
+          itemStyle={chartTheme.tooltip.itemStyle}
+          labelStyle={chartTheme.tooltip.labelStyle}
+          cursor={chartTheme.tooltip.cursor}
         />
         <Bar
           dataKey="activeUsers"

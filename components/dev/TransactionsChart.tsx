@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { chartTheme } from "@/lib/chart-theme";
 
 interface TransactionsChartProps {
   data: { date: string; income: number; expense: number; total: number }[];
@@ -37,34 +38,28 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" vertical={false} />
+        <CartesianGrid strokeDasharray={chartTheme.grid.strokeDasharray} vertical={chartTheme.grid.vertical} stroke={chartTheme.grid.stroke} />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11 }}
-          className="text-muted-foreground"
+          tick={chartTheme.axis}
           tickLine={false}
           axisLine={false}
           interval="preserveStartEnd"
         />
         <YAxis
-          tick={{ fontSize: 11 }}
-          className="text-muted-foreground"
+          tick={chartTheme.axis}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
         />
         <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-            fontSize: "13px",
-          }}
-          labelStyle={{ fontWeight: 600 }}
-          cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+          contentStyle={chartTheme.tooltip.contentStyle}
+          itemStyle={chartTheme.tooltip.itemStyle}
+          labelStyle={chartTheme.tooltip.labelStyle}
+          cursor={chartTheme.tooltip.cursor}
         />
         <Legend
-          wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
+          wrapperStyle={chartTheme.legend.wrapperStyle}
         />
         <Bar
           dataKey="income"
