@@ -272,3 +272,46 @@ body {
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
 }
+
+/* ============================================
+   Recharts specific fixes
+   ============================================ */
+/* Disable tap highlight (Chrome/Android specific) */
+.recharts-wrapper,
+.recharts-wrapper * {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Remove default focus outline on chart elements for touch devices to avoid black borders */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie-sector,
+.recharts-bar-rectangle,
+.recharts-line-curve,
+.recharts-area-area,
+.recharts-active-dot,
+.recharts-dot {
+  outline: none !important;
+}
+
+/* Remove focus outline and focus ring on all interactive SVG elements within charts,
+   covering Chrome's focus-visible and focus states */
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible,
+.recharts-wrapper *:active {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Keep focus-visible for keyboard accessibility */
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus-visible,
+.recharts-pie-sector:focus-visible,
+.recharts-bar-rectangle:focus-visible,
+.recharts-line-curve:focus-visible,
+.recharts-area-area:focus-visible,
+.recharts-active-dot:focus-visible,
+.recharts-dot:focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px;
+}
