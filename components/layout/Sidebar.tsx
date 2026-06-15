@@ -125,26 +125,7 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
               </Button>
             )}
 
-            <Link
-              href="#"
-              className="relative flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground opacity-60 cursor-not-allowed pointer-events-none"
-            >
-              <User size={18} />
-              <span>Profile</span>
-              <span className="ml-auto text-[9px] font-medium bg-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-sm leading-tight">
-                Soon
-              </span>
-            </Link>
-            <Link
-              href="#"
-              className="relative flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground opacity-60 cursor-not-allowed pointer-events-none"
-            >
-              <Settings size={18} />
-              <span>Settings</span>
-              <span className="ml-auto text-[9px] font-medium bg-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-sm leading-tight">
-                Soon
-              </span>
-            </Link>
+
           </div>
         </div>
       </div>

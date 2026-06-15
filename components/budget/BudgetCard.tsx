@@ -109,11 +109,7 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
           </div>
         )}
 
-        {budget.created_at && (
-          <div className="text-[10px] text-muted-foreground/75 text-right mt-1 pt-1 border-t border-muted-foreground/10">
-            Set: {formatDate(budget.created_at)}
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );

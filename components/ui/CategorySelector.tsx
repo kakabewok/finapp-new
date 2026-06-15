@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { CategoryFormModal } from "@/components/ui/CategoryFormModal";
 import { getIcon, ICON_MAP } from "@/lib/icons";
 import { PRESET_COLORS, PICKER_ICONS, getSuggestedIconAndColor } from "@/lib/categoryIconMap";
 import { toast } from "sonner";
@@ -53,13 +54,6 @@ export function CategorySelector({
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
-  // Create form state
-  const [newName, setNewName] = useState("");
-  const [newIcon, setNewIcon] = useState("Tag");
-  const [newColor, setNewColor] = useState("#6b7280");
-  const [newType, setNewType] = useState<"expense" | "income" | "both">("expense");
-  const [isSaving, setIsSaving] = useState(false);
-
   const selectedCategory = categories.find((c) => c.id === value);
 
   const filtered = useMemo(() => {
@@ -73,67 +67,9 @@ export function CategorySelector({
     return byType.filter((c) => c.name.toLowerCase().includes(q));
   }, [categories, filterType, search]);
 
-  const handleNameChange = (name: string) => {
-    setNewName(name);
-    if (name.length >= 2) {
-      const suggestion = getSuggestedIconAndColor(name);
-      setNewIcon(suggestion.icon);
-      setNewColor(suggestion.color);
-    }
-  };
-
-  const resetCreate = () => {
-    setNewName("");
-    setNewIcon("Tag");
-    setNewColor("#6b7280");
-    setNewType("expense");
-    setShowCreate(false);
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) {
-      toast.error("Category name is required");
-      return;
-    }
-    
-    // Client-side duplicate check
-    const isDuplicate = categories.some(
-      (c) => c.name.toLowerCase() === newName.trim().toLowerCase() && 
-      (filterType === "all" || c.type === filterType || c.type === "both" || newType === "both")
-    );
-    if (isDuplicate) {
-      toast.error(`Category "${newName.trim()}" already exists`);
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newName.trim(),
-          icon: newIcon,
-          color: newColor,
-          type: newType,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create category");
-      }
-      const created: Category = await res.json();
-      toast.success(`Category "${created.name}" created`);
-      onCategoryCreated?.(created);
-      onChange(created.id);
-      resetCreate();
-    } catch (err: any) {
-      toast.error(err.message);
-      // Keep form open with entered data on error
-    } finally {
-      setIsSaving(false);
-    }
+  const handleCategorySuccess = (created: Category) => {
+    onCategoryCreated?.(created);
+    onChange(created.id);
   };
 
   return (
@@ -232,127 +168,12 @@ export function CategorySelector({
       </Popover>
 
       {/* Create Category Dialog */}
-      <Dialog 
-        open={showCreate} 
-        onOpenChange={(isOpen) => {
-          if (!isOpen && !isSaving) {
-            resetCreate();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>New Category</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4 pt-2">
-            {/* Preview */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border">
-              <CategoryBadge icon={newIcon} color={newColor} size="md" />
-              <span className="text-sm font-medium truncate">
-                {newName || <span className="text-muted-foreground">Category name</span>}
-              </span>
-            </div>
-
-            {/* Name */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Name <span className="text-red-500">*</span></Label>
-              <Input
-                value={newName}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Groceries"
-                className="h-9"
-                required
-                autoFocus
-              />
-            </div>
-
-            {/* Icon picker */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Icon</Label>
-              <div className="grid grid-cols-8 sm:grid-cols-10 gap-1.5">
-                {PICKER_ICONS.map((iconName) => {
-                  const IconComp = getIcon(iconName);
-                  return (
-                    <button
-                      key={iconName}
-                      type="button"
-                      title={iconName}
-                      onClick={() => setNewIcon(iconName)}
-                      className={cn(
-                        "flex items-center justify-center aspect-square rounded-md text-muted-foreground hover:bg-accent transition-colors",
-                        newIcon === iconName && "bg-primary/15 text-primary ring-2 ring-primary ring-offset-1 dark:ring-offset-background"
-                      )}
-                    >
-                      <IconComp size={16} />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Color picker */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    title={c}
-                    onClick={() => setNewColor(c)}
-                    className={cn(
-                      "w-7 h-7 rounded-full border-2 transition-transform hover:scale-110",
-                      newColor === c ? "border-foreground scale-110 ring-2 ring-foreground/20 ring-offset-1 dark:ring-offset-background" : "border-transparent"
-                    )}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-                <input
-                  type="color"
-                  value={newColor}
-                  onChange={(e) => setNewColor(e.target.value)}
-                  title="Custom color"
-                  className="w-7 h-7 rounded-full cursor-pointer border border-border bg-transparent p-0"
-                />
-              </div>
-            </div>
-
-            {/* Type */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Type</Label>
-              <Select value={newType} onValueChange={(v: any) => setNewType(v)}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={resetCreate}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSaving || !newName.trim()}
-              >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Category
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CategoryFormModal 
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onSuccess={handleCategorySuccess}
+        categories={categories}
+      />
     </>
   );
 }

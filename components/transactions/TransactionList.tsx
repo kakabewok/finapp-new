@@ -20,7 +20,8 @@ import {
   Calendar as CalendarIcon,
   Edit2,
   ListChecks,
-  X
+  X,
+  ScanLine
 } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -278,13 +279,29 @@ export function TransactionList() {
             <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
           </Button>
 
-          <Button asChild className="ml-auto h-9 md:h-9">
-            <Link href="/transactions/new">
-              <Plus className="mr-0 h-4 w-4" />
-              <span className="hidden md:inline">Add Manual</span>
-              <span className="md:hidden">Add</span>
-            </Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="ml-auto h-9 md:h-9">
+                <Plus className="mr-0 h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Add Transaction</span>
+                <span className="md:hidden">Add</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/transactions/new" className="cursor-pointer">
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  <span>Add Manually</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/scan" className="cursor-pointer">
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  <span>Scan Receipt</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -353,7 +370,7 @@ export function TransactionList() {
                       />
                     )}
                     <Link href={`/transactions/${transaction.id}`} className={cn("flex items-center gap-3 min-w-0 flex-1", isSelectMode && "pointer-events-none")}>
-                      <div className="p-2 bg-muted rounded-full shrink-0">
+                      <div className="hidden md:flex p-2 bg-muted rounded-full shrink-0">
                         {getTypeIcon(transaction.type)}
                       </div>
                       <div className="min-w-0">

@@ -13,18 +13,13 @@ import { Trash2, Plus, Tags } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { CategoryFormModal } from "@/components/ui/CategoryFormModal";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // New Category Form State
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState("📦");
-  const [color, setColor] = useState("#94a3b8");
-  const [type, setType] = useState<"expense" | "income" | "both">("expense");
 
   const fetchCategories = async () => {
     try {
@@ -44,36 +39,6 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchCategories();
   }, []);
-
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, icon, color, type }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create category");
-      }
-
-      toast.success("Category created successfully!");
-      setIsDialogOpen(false);
-      setName("");
-      setIcon("📦");
-      setColor("#94a3b8");
-      setType("expense");
-      fetchCategories();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
@@ -103,84 +68,16 @@ export default function CategoriesPage() {
           <p className="text-muted-foreground mt-1">Manage your transaction categories.</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Custom Category</DialogTitle>
-              <DialogDescription>
-                Add a new category to organize your transactions.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateCategory}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input 
-                    id="name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    className="col-span-3" 
-                    required 
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="icon" className="text-right">Emoji Icon</Label>
-                  <Input 
-                    id="icon" 
-                    value={icon} 
-                    onChange={(e) => setIcon(e.target.value)} 
-                    className="col-span-3" 
-                    maxLength={2}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="color" className="text-right">Color</Label>
-                  <div className="col-span-3 flex gap-2">
-                    <Input 
-                      id="color" 
-                      type="color"
-                      value={color} 
-                      onChange={(e) => setColor(e.target.value)} 
-                      className="w-16 h-10 p-1" 
-                    />
-                    <Input 
-                      value={color} 
-                      onChange={(e) => setColor(e.target.value)} 
-                      placeholder="#000000" 
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="type" className="text-right">Type</Label>
-                  <div className="col-span-3">
-                    <Select value={type} onValueChange={(v: any) => setType(v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="expense">Expense</SelectItem>
-                        <SelectItem value="income">Income</SelectItem>
-                        <SelectItem value="both">Both</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Category"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Category
+        </Button>
+        <CategoryFormModal 
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSuccess={fetchCategories}
+          categories={categories}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
