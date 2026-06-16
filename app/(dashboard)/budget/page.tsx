@@ -10,7 +10,7 @@ import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search, ArrowUp, ArrowDown, LayoutGrid, Table2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSelection } from "@/hooks/useSelection";
@@ -53,6 +53,20 @@ export default function BudgetPage() {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  // View mode state — persisted in localStorage, default depends on screen width
+  const [viewMode, setViewMode] = useState<"card" | "table">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("budget-view-preference");
+      if (saved === "card" || saved === "table") return saved;
+      return window.innerWidth >= 768 ? "table" : "card";
+    }
+    return "table";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("budget-view-preference", viewMode);
+  }, [viewMode]);
 
   const fetchBudgets = useCallback(async () => {
     setIsLoading(true);
@@ -265,28 +279,51 @@ export default function BudgetPage() {
         <ProjectedBalanceCard month={month} year={year} refreshTrigger={budgets} />
       </div>
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Category Budgets</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={isSelectMode ? "secondary" : "outline"}
-            onClick={() => {
-              setIsSelectMode(!isSelectMode);
-              clearSelection();
-            }}
-            className="h-9 sm:h-9"
-          >
-            {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
-            <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsCopyDialogOpen(true)}
-            className="h-9 sm:h-9"
-          >
-            <Copy className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Copy from...</span>
-          </Button>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+        <h2 className="text-xl font-semibold mb-4 md:mb-0">Category Budgets</h2>
+        <div className="flex items-center justify-between gap-2">
+          {/* View toggle */}
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant={viewMode === "card" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("card")}
+                className="h-9 w-9 rounded-r-none"
+                aria-label="Card view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("table")}
+                className="h-9 w-9 rounded-l-none"
+                aria-label="Table view"
+              >
+                <Table2 className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              variant={isSelectMode ? "secondary" : "outline"}
+              onClick={() => {
+                setIsSelectMode(!isSelectMode);
+                clearSelection();
+              }}
+              className="h-9 sm:h-9"
+            >
+              {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
+              <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsCopyDialogOpen(true)}
+              className="h-9 sm:h-9"
+            >
+              <Copy className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Copy from...</span>
+            </Button>
+          </div>
           <Button onClick={handleAddNew} className="h-9 sm:h-9">
             <Plus className=" h-4 w-4" />
             Add Budget
@@ -344,28 +381,35 @@ export default function BudgetPage() {
             ))}
           </div>
 
-          {/* Mobile Sort Controls */}
-          <div className="flex md:hidden gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
-            {([
-              { key: "category_name" as SortField, label: "Category" },
-              { key: "budget_amount" as SortField, label: "Planned Amount" },
-              { key: "spent_amount" as SortField, label: "Spent" },
-              { key: "remaining_amount" as SortField, label: "Remaining" },
-              { key: "status" as SortField, label: "Status" },
-            ] as const).map(({ key, label }) => (
-              <Badge
-                key={key}
-                variant={sortField === key ? "default" : "outline"}
-                className="cursor-pointer whitespace-nowrap px-3 py-1.5"
-                onClick={() => handleSort(key)}
-              >
-                {label}
-                {sortField === key && (
-                  sortOrder === "asc" ? <ArrowUp className="w-3 h-3 ml-1.5" /> : <ArrowDown className="w-3 h-3 ml-1.5" />
-                )}
-              </Badge>
-            ))}
-          </div>
+          {/* Sort Chips (visible only in Card view) */}
+          {viewMode === "card" && (
+            <div>
+              <div className="flex flex-row gap-8 items-center">
+                <div className="flex items-center gap-2 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                  <p className="text-muted-foreground text-xs whitespace-nowrap">Sort by</p>
+                  {([
+                    { key: "category_name" as SortField, label: "Category" },
+                    { key: "budget_amount" as SortField, label: "Planned Amount" },
+                    { key: "spent_amount" as SortField, label: "Spent" },
+                    { key: "remaining_amount" as SortField, label: "Remaining" },
+                    { key: "status" as SortField, label: "Status" },
+                  ] as const).map(({ key, label }) => (
+                    <Badge
+                      key={key}
+                      variant={sortField === key ? "default" : "outline"}
+                      className="cursor-pointer whitespace-nowrap px-3 py-1.5"
+                      onClick={() => handleSort(key)}
+                    >
+                      {label}
+                      {sortField === key && (
+                        sortOrder === "asc" ? <ArrowUp className="w-3 h-3 ml-1.5" /> : <ArrowDown className="w-3 h-3 ml-1.5" />
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -390,41 +434,41 @@ export default function BudgetPage() {
         </div>
       ) : (
         <>
-          {/* Desktop/Tablet: Table view */}
-          <div className="hidden md:block">
-            <BudgetTable
-              budgets={sortedBudgets}
-              velocities={velocities}
-              onEdit={handleEdit}
-              onDelete={setDeletingId}
-              isSelectMode={isSelectMode}
-              isSelected={isSelected}
-              onToggleSelect={toggleSelection}
-              isAllSelected={isAllSelected}
-              selectAll={selectAll}
-              clearSelection={clearSelection}
-              sortField={sortField}
-              sortOrder={sortOrder}
-              onSort={handleSort}
-            />
-          </div>
-
-          {/* Mobile: Card view */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
-            {sortedBudgets.map(budget => (
-              <BudgetCard
-                key={budget.id}
-                budget={budget}
-                velocityMessage={velocities[budget.id]?.message}
-                velocityStatus={velocities[budget.id]?.velocityStatus}
+          {viewMode === "table" ? (
+            <div className="overflow-x-auto hide-scrollbar">
+              <BudgetTable
+                budgets={sortedBudgets}
+                velocities={velocities}
                 onEdit={handleEdit}
                 onDelete={setDeletingId}
                 isSelectMode={isSelectMode}
-                isSelected={isSelected(budget.id)}
+                isSelected={isSelected}
                 onToggleSelect={toggleSelection}
+                isAllSelected={isAllSelected}
+                selectAll={selectAll}
+                clearSelection={clearSelection}
+                sortField={sortField}
+                sortOrder={sortOrder}
+                onSort={handleSort}
               />
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {sortedBudgets.map(budget => (
+                <BudgetCard
+                  key={budget.id}
+                  budget={budget}
+                  velocityMessage={velocities[budget.id]?.message}
+                  velocityStatus={velocities[budget.id]?.velocityStatus}
+                  onEdit={handleEdit}
+                  onDelete={setDeletingId}
+                  isSelectMode={isSelectMode}
+                  isSelected={isSelected(budget.id)}
+                  onToggleSelect={toggleSelection}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
 

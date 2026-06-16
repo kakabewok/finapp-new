@@ -306,15 +306,11 @@ export function TransactionList() {
             <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
           </Button>
 
-          {/* Sort Controls */}
+          {/* Sort Controls — mobile only, desktop uses column headers */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-9 md:h-9">
-                <ArrowUpDown className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">
-                  {sortBy === "transaction_date" ? "Date" : "Amount"}{" "}
-                  {sortOrder === "desc" ? "↓" : "↑"}
-                </span>
+              <Button variant="outline" className="h-9 md:hidden">
+                <ArrowUpDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -518,8 +514,50 @@ export function TransactionList() {
               )}
               <TableHead>Transaction</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead className="hidden md:table-cell">Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sortBy === "transaction_date") {
+                      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+                    } else {
+                      setSortBy("transaction_date");
+                      setSortOrder("desc");
+                    }
+                    setPage(1);
+                  }}
+                  className="flex items-center gap-1 font-medium hover:text-foreground transition-colors"
+                >
+                  Date
+                  {sortBy === "transaction_date" ? (
+                    sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 opacity-40" />
+                  )}
+                </button>
+              </TableHead>
+              <TableHead className="text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sortBy === "amount") {
+                      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+                    } else {
+                      setSortBy("amount");
+                      setSortOrder("desc");
+                    }
+                    setPage(1);
+                  }}
+                  className="flex items-center gap-1 font-medium hover:text-foreground transition-colors w-full justify-end"
+                >
+                  Amount
+                  {sortBy === "amount" ? (
+                    sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 opacity-40" />
+                  )}
+                </button>
+              </TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
