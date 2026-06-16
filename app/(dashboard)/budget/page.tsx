@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { BudgetSummary, Category } from "@/types";
 import { BudgetCard } from "@/components/budget/BudgetCard";
+import { BudgetTable } from "@/components/budget/BudgetTable";
 import { BudgetForm } from "@/components/budget/BudgetForm";
 import { CopyLastMonthDialog } from "@/components/budget/CopyLastMonthDialog";
 import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
@@ -361,21 +362,40 @@ export default function BudgetPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredBudgets.map(budget => (
-            <BudgetCard
-              key={budget.id}
-              budget={budget}
-              velocityMessage={velocities[budget.id]?.message}
-              velocityStatus={velocities[budget.id]?.velocityStatus}
+        <>
+          {/* Desktop/Tablet: Table view */}
+          <div className="hidden md:block">
+            <BudgetTable
+              budgets={filteredBudgets}
+              velocities={velocities}
               onEdit={handleEdit}
               onDelete={setDeletingId}
               isSelectMode={isSelectMode}
-              isSelected={isSelected(budget.id)}
+              isSelected={isSelected}
               onToggleSelect={toggleSelection}
+              isAllSelected={isAllSelected}
+              selectAll={selectAll}
+              clearSelection={clearSelection}
             />
-          ))}
-        </div>
+          </div>
+
+          {/* Mobile: Card view */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+            {filteredBudgets.map(budget => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget}
+                velocityMessage={velocities[budget.id]?.message}
+                velocityStatus={velocities[budget.id]?.velocityStatus}
+                onEdit={handleEdit}
+                onDelete={setDeletingId}
+                isSelectMode={isSelectMode}
+                isSelected={isSelected(budget.id)}
+                onToggleSelect={toggleSelection}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <BudgetForm
