@@ -20,8 +20,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Edit2, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-type SortField = "category_name" | "budget_amount" | "spent_amount" | "remaining_amount" | "percentage_used";
-type SortOrder = "asc" | "desc";
+import { SortField, SortOrder } from "@/hooks/useBudgetSort";
 
 interface BudgetTableProps {
   budgets: BudgetSummary[];
@@ -34,6 +33,9 @@ interface BudgetTableProps {
   isAllSelected: (ids: string[]) => boolean;
   selectAll: (ids: string[]) => void;
   clearSelection: () => void;
+  sortField: SortField | null;
+  sortOrder: SortOrder;
+  onSort: (field: SortField) => void;
 }
 
 export function BudgetTable({
@@ -47,33 +49,10 @@ export function BudgetTable({
   isAllSelected,
   selectAll,
   clearSelection,
+  sortField,
+  sortOrder,
+  onSort,
 }: BudgetTableProps) {
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
-  };
-
-  const sortedBudgets = [...budgets].sort((a, b) => {
-    if (!sortField) return 0;
-    const aVal = a[sortField];
-    const bVal = b[sortField];
-    if (typeof aVal === "string" && typeof bVal === "string") {
-      return sortOrder === "asc"
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
-    }
-    return sortOrder === "asc"
-      ? (aVal as number) - (bVal as number)
-      : (bVal as number) - (aVal as number);
-  });
-
   const totalPlanned = budgets.reduce((s, b) => s + b.effective_budget, 0);
   const totalSpent = budgets.reduce((s, b) => s + b.spent_amount, 0);
   const totalRemaining = totalPlanned - totalSpent;
@@ -136,7 +115,7 @@ export function BudgetTable({
             <TableHead>
               <button
                 type="button"
-                onClick={() => handleSort("category_name")}
+                onClick={() => onSort("category_name")}
                 className="flex items-center font-medium hover:text-foreground transition-colors"
               >
                 Category
@@ -146,7 +125,7 @@ export function BudgetTable({
             <TableHead className="text-right">
               <button
                 type="button"
-                onClick={() => handleSort("budget_amount")}
+                onClick={() => onSort("budget_amount")}
                 className="flex items-center justify-end font-medium hover:text-foreground transition-colors w-full"
               >
                 Planned
@@ -156,7 +135,7 @@ export function BudgetTable({
             <TableHead className="text-right">
               <button
                 type="button"
-                onClick={() => handleSort("spent_amount")}
+                onClick={() => onSort("spent_amount")}
                 className="flex items-center justify-end font-medium hover:text-foreground transition-colors w-full"
               >
                 Spent
@@ -166,7 +145,7 @@ export function BudgetTable({
             <TableHead className="text-right">
               <button
                 type="button"
-                onClick={() => handleSort("remaining_amount")}
+                onClick={() => onSort("remaining_amount")}
                 className="flex items-center justify-end font-medium hover:text-foreground transition-colors w-full"
               >
                 Remaining
@@ -176,20 +155,29 @@ export function BudgetTable({
             <TableHead className="w-[140px]">
               <button
                 type="button"
-                onClick={() => handleSort("percentage_used")}
+                onClick={() => onSort("percentage_used")}
                 className="flex items-center font-medium hover:text-foreground transition-colors"
               >
                 Progress
                 <SortIcon field="percentage_used" />
               </button>
             </TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>
+              <button
+                type="button"
+                onClick={() => onSort("status")}
+                className="flex items-center font-medium hover:text-foreground transition-colors"
+              >
+                Status
+                <SortIcon field="status" />
+              </button>
+            </TableHead>
             <TableHead className="w-[50px] text-center">Notes</TableHead>
             <TableHead className="w-[90px] text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedBudgets.map((budget) => {
+          {budgets.map((budget) => {
             const velocityMessage = velocities[budget.id]?.message;
             const velocityStatus = velocities[budget.id]?.velocityStatus;
             const remaining = budget.remaining_amount;

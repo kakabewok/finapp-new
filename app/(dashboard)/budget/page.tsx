@@ -10,11 +10,13 @@ import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search } from "lucide-react";
+import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSelection } from "@/hooks/useSelection";
+import { useBudgetSort, SortField } from "@/hooks/useBudgetSort";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -174,6 +176,9 @@ export default function BudgetPage() {
     return result;
   }, [budgets, searchQuery, statusFilter]);
 
+  // Apply sorting hook
+  const { sortedBudgets, sortField, sortOrder, handleSort } = useBudgetSort(filteredBudgets);
+
   // --- Filter counts ---
   const filterCounts = useMemo(() => {
     // Apply search first, then count by status
@@ -329,14 +334,36 @@ export default function BudgetPage() {
                 className="h-8 text-xs sm:text-sm"
               >
                 {label}
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
-                  statusFilter === key
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}>
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${statusFilter === key
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+                  }`}>
                   {filterCounts[key]}
                 </span>
               </Button>
+            ))}
+          </div>
+
+          {/* Mobile Sort Controls */}
+          <div className="flex md:hidden gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
+            {([
+              { key: "category_name" as SortField, label: "Category" },
+              { key: "budget_amount" as SortField, label: "Planned Amount" },
+              { key: "spent_amount" as SortField, label: "Spent" },
+              { key: "remaining_amount" as SortField, label: "Remaining" },
+              { key: "status" as SortField, label: "Status" },
+            ] as const).map(({ key, label }) => (
+              <Badge
+                key={key}
+                variant={sortField === key ? "default" : "outline"}
+                className="cursor-pointer whitespace-nowrap px-3 py-1.5"
+                onClick={() => handleSort(key)}
+              >
+                {label}
+                {sortField === key && (
+                  sortOrder === "asc" ? <ArrowUp className="w-3 h-3 ml-1.5" /> : <ArrowDown className="w-3 h-3 ml-1.5" />
+                )}
+              </Badge>
             ))}
           </div>
         </div>
@@ -366,7 +393,7 @@ export default function BudgetPage() {
           {/* Desktop/Tablet: Table view */}
           <div className="hidden md:block">
             <BudgetTable
-              budgets={filteredBudgets}
+              budgets={sortedBudgets}
               velocities={velocities}
               onEdit={handleEdit}
               onDelete={setDeletingId}
@@ -376,12 +403,15 @@ export default function BudgetPage() {
               isAllSelected={isAllSelected}
               selectAll={selectAll}
               clearSelection={clearSelection}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
             />
           </div>
 
           {/* Mobile: Card view */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
-            {filteredBudgets.map(budget => (
+            {sortedBudgets.map(budget => (
               <BudgetCard
                 key={budget.id}
                 budget={budget}
