@@ -5,7 +5,7 @@ import { Category, BudgetSummary } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -34,26 +34,26 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
   const [isLoading, setIsLoading] = useState(false);
   const [categoryId, setCategoryId] = useState(existingBudget?.category_id || "");
   const [amount, setAmount] = useState(existingBudget?.budget_amount?.toString() || "");
-  const [rolloverEnabled, setRolloverEnabled] = useState((existingBudget as any)?.rollover_enabled || false);
+  const [notes, setNotes] = useState(existingBudget?.notes || "");
 
   // Reset form when opened with new data
   useEffect(() => {
     if (open) {
       setCategoryId(existingBudget?.category_id || "");
       setAmount(existingBudget?.budget_amount?.toString() || "");
-      setRolloverEnabled((existingBudget as any)?.rollover_enabled || false);
+      setNotes(existingBudget?.notes || "");
     } else if (!existingBudget) {
       // Clear form when closing if it was a new budget
       setCategoryId("");
       setAmount("");
-      setRolloverEnabled(false);
+      setNotes("");
     }
   }, [open, existingBudget]);
 
   const resetForm = () => {
     setCategoryId("");
     setAmount("");
-    setRolloverEnabled(false);
+    setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,13 +71,13 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
       const payload = existingBudget ? {
         category_id: categoryId,
         amount: parseFloat(amount),
-        rollover_enabled: rolloverEnabled
+        notes: notes || null,
       } : {
         category_id: categoryId,
         month: selectedMonth,
         year: selectedYear,
         amount: parseFloat(amount),
-        rollover_enabled: rolloverEnabled
+        notes: notes || null,
       };
 
       const res = await fetch(url, {
@@ -147,16 +147,15 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, sel
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label className="text-base">Rollover</Label>
-              <p className="text-sm text-muted-foreground">
-                Carry over unused budget to next month
-              </p>
-            </div>
-            <Switch
-              checked={rolloverEnabled}
-              onCheckedChange={setRolloverEnabled}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (optional)</Label>
+            <Textarea
+              id="notes"
+              placeholder="Add a note about this budget..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="resize-none"
             />
           </div>
 

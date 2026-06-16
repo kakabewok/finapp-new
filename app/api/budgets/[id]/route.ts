@@ -4,8 +4,8 @@ import { z } from "zod";
 
 const patchSchema = z.object({
   amount: z.number().positive().optional(),
-  rollover_enabled: z.boolean().optional(),
   category_id: z.string().uuid().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 type Context = {

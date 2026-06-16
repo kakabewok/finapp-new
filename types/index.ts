@@ -147,6 +147,7 @@ export interface Budget {
   amount: number;
   rollover_enabled: boolean;
   rollover_amount: number;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -167,6 +168,7 @@ export interface BudgetSummary {
   remaining_amount: number;
   percentage_used: number;
   status: 'normal' | 'warning' | 'overbudget';
+  notes?: string | null;
   created_at?: string;
 }
 

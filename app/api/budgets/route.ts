@@ -7,7 +7,7 @@ const budgetSchema = z.object({
   month: z.number().min(1).max(12),
   year: z.number(),
   amount: z.number().positive(),
-  rollover_enabled: z.boolean().default(false),
+  notes: z.string().nullable().optional(),
 });
 
 export async function GET(request: Request) {
@@ -32,18 +32,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch budgets" }, { status: 500 });
     }
 
-    // Fetch raw budgets to get created_at for this user, month, and year
+    // Fetch raw budgets to get created_at and notes for this user, month, and year
     const { data: rawBudgets } = await supabase
       .from("budgets")
-      .select("id, created_at")
+      .select("id, created_at, notes")
       .eq("user_id", user.id)
       .eq("month", month)
       .eq("year", year);
 
-    const budgetMap = new Map(rawBudgets?.map(b => [b.id, b.created_at]) || []);
+    const budgetMap = new Map(rawBudgets?.map(b => [b.id, { created_at: b.created_at, notes: b.notes }]) || []);
     const enrichedData = data.map(item => ({
       ...item,
-      created_at: budgetMap.get(item.id) || null
+      created_at: budgetMap.get(item.id)?.created_at || null,
+      notes: budgetMap.get(item.id)?.notes || null,
     }));
 
     return NextResponse.json(enrichedData);

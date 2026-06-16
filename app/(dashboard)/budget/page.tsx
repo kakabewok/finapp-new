@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { BudgetSummary, Category } from "@/types";
 import { BudgetCard } from "@/components/budget/BudgetCard";
 import { BudgetForm } from "@/components/budget/BudgetForm";
 import { CopyLastMonthDialog } from "@/components/budget/CopyLastMonthDialog";
 import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, ListChecks, X, Trash2, Copy } from "lucide-react";
+import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSelection } from "@/hooks/useSelection";
@@ -23,6 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+type StatusFilter = "all" | "over" | "on_track" | "near_limit";
 
 export default function BudgetPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -43,6 +46,10 @@ export default function BudgetPage() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const { selectedIds, toggleSelection, selectAll, clearSelection, isSelected, isAllSelected } = useSelection<string>();
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const fetchBudgets = useCallback(async () => {
     setIsLoading(true);
@@ -70,6 +77,12 @@ export default function BudgetPage() {
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
+
+  // Reset search and filter when month/year changes
+  useEffect(() => {
+    setSearchQuery("");
+    setStatusFilter("all");
+  }, [month, year]);
 
   const handleDelete = async () => {
     if (!deletingId) return;
@@ -132,9 +145,64 @@ export default function BudgetPage() {
     );
   };
 
+  // --- Client-side filtering ---
+  const filteredBudgets = useMemo(() => {
+    let result = budgets;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((b) =>
+        b.category_name.toLowerCase().includes(q)
+      );
+    }
+
+    // Status filter
+    if (statusFilter === "over") {
+      result = result.filter((b) => b.status === "overbudget");
+    } else if (statusFilter === "near_limit") {
+      result = result.filter(
+        (b) => b.status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
+      );
+    } else if (statusFilter === "on_track") {
+      result = result.filter(
+        (b) => b.status !== "overbudget" && b.percentage_used < 80
+      );
+    }
+
+    return result;
+  }, [budgets, searchQuery, statusFilter]);
+
+  // --- Filter counts ---
+  const filterCounts = useMemo(() => {
+    // Apply search first, then count by status
+    let searchFiltered = budgets;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      searchFiltered = searchFiltered.filter((b) =>
+        b.category_name.toLowerCase().includes(q)
+      );
+    }
+
+    return {
+      all: searchFiltered.length,
+      over: searchFiltered.filter((b) => b.status === "overbudget").length,
+      near_limit: searchFiltered.filter(
+        (b) => b.status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
+      ).length,
+      on_track: searchFiltered.filter(
+        (b) => b.status !== "overbudget" && b.percentage_used < 80
+      ).length,
+    };
+  }, [budgets, searchQuery]);
+
+  // Summary from ALL budgets (not filtered)
   const totalBudget = budgets.reduce((acc, b) => acc + b.effective_budget, 0);
   const totalSpent = budgets.reduce((acc, b) => acc + b.spent_amount, 0);
   const totalRemaining = totalBudget - totalSpent;
+
+  const isSearchActive = searchQuery.trim().length > 0;
+  const isFilterActive = statusFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -220,6 +288,59 @@ export default function BudgetPage() {
         </div>
       </div>
 
+      {/* Search & Filter Controls */}
+      {!isLoading && budgets.length > 0 && (
+        <div className="space-y-3">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by category name..."
+              className="pl-9 pr-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Buttons */}
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { key: "all" as StatusFilter, label: "All" },
+              { key: "over" as StatusFilter, label: "Over Budget" },
+              { key: "near_limit" as StatusFilter, label: "Near Limit" },
+              { key: "on_track" as StatusFilter, label: "On Track" },
+            ] as const).map(({ key, label }) => (
+              <Button
+                key={key}
+                variant={statusFilter === key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter(key)}
+                className="h-8 text-xs sm:text-sm"
+              >
+                {label}
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
+                  statusFilter === key
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}>
+                  {filterCounts[key]}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -229,9 +350,19 @@ export default function BudgetPage() {
           <p className="text-muted-foreground mb-4">No budgets set for this month.</p>
           <Button onClick={handleAddNew} variant="outline">Create your first budget</Button>
         </div>
+      ) : filteredBudgets.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg border-dashed bg-muted/20">
+          <p className="text-muted-foreground">
+            {isSearchActive && isFilterActive
+              ? `No budget found matching "${searchQuery}" with the selected filter.`
+              : isSearchActive
+                ? `No budget found for "${searchQuery}".`
+                : "No budgets match the selected filter."}
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {budgets.map(budget => (
+          {filteredBudgets.map(budget => (
             <BudgetCard
               key={budget.id}
               budget={budget}

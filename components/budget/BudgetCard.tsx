@@ -61,6 +61,12 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
             </div>
           </div>
           <div className="flex gap-1">
+            {budget.notes && (
+              <InfoTooltip 
+                text={budget.notes}
+                buttonClassName="rounded-full p-0.5 text-blue-500 hover:text-blue-600 bg-blue-500/10 hover:bg-blue-500/20"
+              />
+            )}
             <Button 
               variant="ghost" 
               size="icon" 

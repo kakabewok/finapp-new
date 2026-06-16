@@ -21,7 +21,10 @@ import {
   Edit2,
   ListChecks,
   X,
-  ScanLine
+  ScanLine,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -87,6 +90,26 @@ export function TransactionList() {
   const { selectedIds, toggleSelection, selectAll, clearSelection, isSelected, isAllSelected } = useSelection<string>();
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // Sort state — persisted in localStorage
+  const [sortBy, setSortBy] = useState<"transaction_date" | "amount">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("txn_sortBy") as "transaction_date" | "amount") || "transaction_date";
+    }
+    return "transaction_date";
+  });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("txn_sortOrder") as "asc" | "desc") || "desc";
+    }
+    return "desc";
+  });
+
+  // Persist sort state
+  useEffect(() => {
+    localStorage.setItem("txn_sortBy", sortBy);
+    localStorage.setItem("txn_sortOrder", sortOrder);
+  }, [sortBy, sortOrder]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -119,6 +142,10 @@ export function TransactionList() {
         if (dateTo) params.append("dateTo", dateTo);
       }
 
+      // Sort params
+      params.append("sortBy", sortBy);
+      params.append("sortOrder", sortOrder);
+
       // Add timestamp to bust browser cache
       params.append("_t", Date.now().toString());
 
@@ -136,7 +163,7 @@ export function TransactionList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter, categoryFilter, datePreset, dateFrom, dateTo]);
+  }, [page, debouncedSearch, typeFilter, categoryFilter, datePreset, dateFrom, dateTo, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchTransactions();
@@ -278,6 +305,57 @@ export function TransactionList() {
             {isSelectMode ? <X className="h-4 w-4 md:mr-2" /> : <ListChecks className="h-4 w-4 md:mr-2" />}
             <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
           </Button>
+
+          {/* Sort Controls */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9 md:h-9">
+                <ArrowUpDown className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  {sortBy === "transaction_date" ? "Date" : "Amount"}{" "}
+                  {sortOrder === "desc" ? "↓" : "↑"}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  if (sortBy === "transaction_date") {
+                    setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+                  } else {
+                    setSortBy("transaction_date");
+                    setSortOrder("desc");
+                  }
+                  setPage(1);
+                }}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Date {sortBy === "transaction_date" ? (sortOrder === "desc" ? "(Newest first)" : "(Oldest first)") : ""}
+                {sortBy === "transaction_date" && (
+                  sortOrder === "desc" ? <ArrowDown className="ml-auto h-3 w-3" /> : <ArrowUp className="ml-auto h-3 w-3" />
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (sortBy === "amount") {
+                    setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+                  } else {
+                    setSortBy("amount");
+                    setSortOrder("desc");
+                  }
+                  setPage(1);
+                }}
+              >
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                Amount {sortBy === "amount" ? (sortOrder === "desc" ? "(Highest first)" : "(Lowest first)") : ""}
+                {sortBy === "amount" && (
+                  sortOrder === "desc" ? <ArrowDown className="ml-auto h-3 w-3" /> : <ArrowUp className="ml-auto h-3 w-3" />
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

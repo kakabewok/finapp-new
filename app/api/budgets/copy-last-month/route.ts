@@ -43,7 +43,7 @@ export async function GET(request: Request) {
         id,
         category_id,
         amount,
-        rollover_enabled,
+        notes,
         categories (
           id,
           name,

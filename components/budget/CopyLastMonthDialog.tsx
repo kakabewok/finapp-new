@@ -22,7 +22,7 @@ interface PrevBudgetItem {
   id: string;
   category_id: string;
   amount: number;
-  rollover_enabled: boolean;
+  notes?: string | null;
   categories: {
     id: string;
     name: string;
@@ -182,7 +182,6 @@ export function CopyLastMonthDialog({
               month: selectedMonth,
               year: selectedYear,
               amount: parseFloat(amounts[b.category_id]),
-              rollover_enabled: b.rollover_enabled,
             }),
           })
         )
