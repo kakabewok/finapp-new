@@ -11,38 +11,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all distinct month and year combinations for the current user
+    // Fetch all budgets with their date ranges for the "Copy from..." feature
     const { data: budgets, error } = await supabase
       .from("budgets")
-      .select("month, year")
-      .eq("user_id", user.id);
+      .select("id, start_date, end_date, category_id")
+      .eq("user_id", user.id)
+      .order("start_date", { ascending: false });
 
     if (error) {
-      console.error("Error fetching available months:", error);
-      return NextResponse.json({ error: "Failed to fetch available months" }, { status: 500 });
+      console.error("Error fetching available periods:", error);
+      return NextResponse.json({ error: "Failed to fetch available periods" }, { status: 500 });
     }
 
-    // Deduplicate the month/year combinations
-    const uniqueMonthsMap = new Map<string, { month: number; year: number }>();
+    // Group by unique start_date/end_date periods
+    const periodsMap = new Map<string, { start_date: string; end_date: string; budget_count: number }>();
     budgets?.forEach((b) => {
-      const key = `${b.year}-${b.month}`;
-      if (!uniqueMonthsMap.has(key)) {
-        uniqueMonthsMap.set(key, { month: b.month, year: b.year });
+      const key = `${b.start_date}_${b.end_date}`;
+      if (!periodsMap.has(key)) {
+        periodsMap.set(key, { start_date: b.start_date, end_date: b.end_date, budget_count: 0 });
       }
+      periodsMap.get(key)!.budget_count++;
     });
 
-    const uniqueMonths = Array.from(uniqueMonthsMap.values());
-
-    // Sort descending (latest first)
-    uniqueMonths.sort((a, b) => {
-      if (a.year !== b.year) {
-        return b.year - a.year;
-      }
-      return b.month - a.month;
-    });
+    const periods = Array.from(periodsMap.values());
+    // Sort descending by start_date
+    periods.sort((a, b) => b.start_date.localeCompare(a.start_date));
 
     return NextResponse.json({
-      availableMonths: uniqueMonths,
+      periods,
     });
   } catch (error) {
     console.error("Unexpected error:", error);

@@ -31,10 +31,13 @@ export async function GET(request: Request) {
     const lastMonthDateFrom = new Date(year, month - 2, 1).toISOString();
     const lastMonthDateTo = new Date(year, month - 1, 0, 23, 59, 59).toISOString();
 
-    const [{ data: currentTx }, { data: lastTx }, { data: budgets }] = await Promise.all([
-      supabase.from("transactions").select("type, amount, category:categories(name)").eq("user_id", user.id).gte("transaction_date", dateFrom).lte("transaction_date", dateTo),
+    const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
+
+    const [{ data: currentTx }, { data: lastTx }, { data: rawBudgets }] = await Promise.all([
+      supabase.from("transactions").select("type, amount, category_id, category:categories(name)").eq("user_id", user.id).gte("transaction_date", dateFrom).lte("transaction_date", dateTo),
       supabase.from("transactions").select("type, amount").eq("user_id", user.id).gte("transaction_date", lastMonthDateFrom).lte("transaction_date", lastMonthDateTo),
-      supabase.from("budget_summary").select("*").eq("user_id", user.id).eq("month", month).eq("year", year)
+      supabase.from("budgets").select("*, categories(name)").eq("user_id", user.id).eq("status", "active").lte("start_date", monthEnd).gte("end_date", monthStart)
     ]);
 
     const income = (currentTx || []).filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
@@ -48,7 +51,15 @@ export async function GET(request: Request) {
     const incomeChange = lastIncome > 0 ? ((income - lastIncome) / lastIncome) * 100 : 0;
     const expenseChange = lastExpense > 0 ? ((expense - lastExpense) / lastExpense) * 100 : 0;
 
-    const budgetSummary = (budgets || []).map(b => `${b.category_name}: ${b.percentage_used}% used (${b.status})`).join(", ");
+    const budgetSummary = (rawBudgets || []).map(b => {
+      const cat = b.categories as any;
+      const catName = (Array.isArray(cat) ? cat[0]?.name : cat?.name) || "Unknown";
+      const spentForCat = (currentTx || []).filter(t => t.type === 'expense' && t.category_id === b.category_id).reduce((a: number, t: any) => a + t.amount, 0);
+      const effectiveBudget = Number(b.amount) + Number(b.rollover_amount || 0);
+      const percentageUsed = effectiveBudget > 0 ? Math.round((spentForCat / effectiveBudget) * 100) : 0;
+      const status = percentageUsed >= 100 ? 'overbudget' : percentageUsed >= 80 ? 'warning' : 'normal';
+      return `${catName}: ${percentageUsed}% used (${status})`;
+    }).join(", ");
     
     const catMap = new Map<string, number>();
     (currentTx || []).filter(t => t.type === 'expense').forEach(t => {

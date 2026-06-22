@@ -34,13 +34,54 @@ export async function GET(request: Request) {
       .gte("transaction_date", lastMonthDateFrom)
       .lte("transaction_date", lastMonthDateTo);
 
-    // 3. Budgets this month
-    const { data: budgets } = await supabase
-      .from("budget_summary")
-      .select("*")
+    // 3. Budgets that overlap with this month (using date ranges)
+    const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
+    
+    const { data: rawBudgets } = await supabase
+      .from("budgets")
+      .select(`*, categories(name, icon, color)`)
       .eq("user_id", user.id)
-      .eq("month", month)
-      .eq("year", year);
+      .eq("status", "active")
+      .lte("start_date", monthEnd)
+      .gte("end_date", monthStart);
+
+    // Compute budget performance summaries
+    const budgets = (rawBudgets || []).map((b) => {
+      const cat = b.categories as any;
+      const budgetTxs = (currentTx || []).filter(
+        (t) => t.type === 'expense' && t.category_id === b.category_id
+      );
+      const spentAmount = budgetTxs.reduce((a: number, t: any) => a + t.amount, 0);
+      const effectiveBudget = Number(b.amount) + Number(b.rollover_amount || 0);
+      const remainingAmount = effectiveBudget - spentAmount;
+      const percentageUsed = effectiveBudget > 0 ? Math.round((spentAmount / effectiveBudget) * 100) : 0;
+      let spendingStatus: string = 'normal';
+      if (percentageUsed >= 100) spendingStatus = 'overbudget';
+      else if (percentageUsed >= 80) spendingStatus = 'warning';
+      return {
+        id: b.id,
+        user_id: b.user_id,
+        category_id: b.category_id,
+        category_name: cat?.name || "Unknown",
+        category_icon: cat?.icon || null,
+        category_color: cat?.color || null,
+        start_date: b.start_date,
+        end_date: b.end_date,
+        is_recurring: b.is_recurring,
+        is_rollover: b.is_rollover,
+        budget_status: b.status,
+        budget_amount: Number(b.amount),
+        rollover_amount: Number(b.rollover_amount || 0),
+        effective_budget: effectiveBudget,
+        spent_amount: spentAmount,
+        remaining_amount: remainingAmount,
+        percentage_used: percentageUsed,
+        spending_status: spendingStatus,
+        notes: b.notes || null,
+        created_at: b.created_at,
+      };
+    });
 
     if (txError) throw txError;
 

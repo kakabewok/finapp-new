@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { BudgetSummary } from "@/types";
 import {
   Table,
@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { Edit2, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Edit2, Trash2, ArrowUp, ArrowDown, ArrowUpDown, RefreshCw, Archive } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 import { SortField, SortOrder } from "@/hooks/useBudgetSort";
 
@@ -27,6 +27,8 @@ interface BudgetTableProps {
   velocities: Record<string, any>;
   onEdit: (budget: BudgetSummary) => void;
   onDelete: (id: string) => void;
+  onRenew?: (budget: BudgetSummary) => void;
+  onArchive?: (budget: BudgetSummary) => void;
   isSelectMode?: boolean;
   isSelected: (id: string) => boolean;
   onToggleSelect: (id: string) => void;
@@ -43,6 +45,8 @@ export function BudgetTable({
   velocities,
   onEdit,
   onDelete,
+  onRenew,
+  onArchive,
   isSelectMode,
   isSelected,
   onToggleSelect,
@@ -69,7 +73,23 @@ export function BudgetTable({
   };
 
   const getStatusBadge = (budget: BudgetSummary) => {
-    if (budget.status === "overbudget") {
+    const isExpired = new Date(budget.end_date) < new Date();
+    
+    if (isExpired && budget.budget_status === "active") {
+      return (
+        <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 hover:bg-orange-500/25">
+          Expired
+        </Badge>
+      );
+    }
+    if (budget.budget_status === "archived") {
+      return (
+        <Badge variant="secondary">
+          Archived
+        </Badge>
+      );
+    }
+    if (budget.spending_status === "overbudget") {
       return (
         <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/25 hover:bg-rose-500/25">
           Over Budget
@@ -91,8 +111,8 @@ export function BudgetTable({
   };
 
   const getProgressColor = (budget: BudgetSummary) => {
-    if (budget.status === "overbudget") return "bg-rose-500";
-    if (budget.status === "warning") return "bg-amber-500";
+    if (budget.spending_status === "overbudget") return "bg-rose-500";
+    if (budget.spending_status === "warning") return "bg-amber-500";
     return "bg-emerald-500";
   };
 
@@ -120,6 +140,16 @@ export function BudgetTable({
               >
                 Category
                 <SortIcon field="category_name" />
+              </button>
+            </TableHead>
+            <TableHead className="hidden lg:table-cell">
+              <button
+                type="button"
+                onClick={() => onSort("start_date")}
+                className="flex items-center font-medium hover:text-foreground transition-colors"
+              >
+                Period
+                <SortIcon field="start_date" />
               </button>
             </TableHead>
             <TableHead className="text-right">
@@ -165,15 +195,15 @@ export function BudgetTable({
             <TableHead>
               <button
                 type="button"
-                onClick={() => onSort("status")}
+                onClick={() => onSort("spending_status")}
                 className="flex items-center font-medium hover:text-foreground transition-colors"
               >
                 Status
-                <SortIcon field="status" />
+                <SortIcon field="spending_status" />
               </button>
             </TableHead>
             <TableHead className="w-[50px] text-center">Notes</TableHead>
-            <TableHead className="w-[90px] text-center">Actions</TableHead>
+            <TableHead className="w-[120px] text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -181,6 +211,7 @@ export function BudgetTable({
             const velocityMessage = velocities[budget.id]?.message;
             const velocityStatus = velocities[budget.id]?.velocityStatus;
             const remaining = budget.remaining_amount;
+            const isExpired = new Date(budget.end_date) < new Date();
 
             return (
               <TableRow
@@ -211,8 +242,28 @@ export function BudgetTable({
                       color={budget.category_color}
                       size="sm"
                     />
-                    <span className="font-medium">{budget.category_name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/budget/${budget.id}`} className="font-medium hover:underline">
+                        {budget.category_name}
+                      </Link>
+                      {budget.is_recurring && (
+                        <RefreshCw className="h-3 w-3 text-blue-500" />
+                      )}
+                      {budget.rollover_amount > 0 && (
+                        <InfoTooltip
+                          text={`Includes ${formatCurrency(budget.rollover_amount, "IDR")} rolled over from previous period`}
+                          buttonClassName="rounded-full p-0.5 text-blue-500 hover:text-blue-600"
+                        />
+                      )}
+                    </div>
                   </div>
+                </TableCell>
+
+                {/* Period */}
+                <TableCell className="hidden lg:table-cell">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(budget.start_date)} – {formatDate(budget.end_date)}
+                  </span>
                 </TableCell>
 
                 {/* Planned */}
@@ -283,6 +334,34 @@ export function BudgetTable({
                 {/* Actions */}
                 <TableCell>
                   <div className="flex items-center justify-center gap-0.5">
+                    {isExpired && budget.budget_status === "active" && budget.is_recurring && onRenew && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRenew(budget);
+                        }}
+                        className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                        aria-label="Renew budget"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isExpired && budget.budget_status === "active" && !budget.is_recurring && onArchive && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onArchive(budget);
+                        }}
+                        className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                        aria-label="Archive budget"
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -317,6 +396,7 @@ export function BudgetTable({
           <TableRow className="bg-muted/40 hover:bg-muted/40 font-semibold">
             {isSelectMode && <TableCell />}
             <TableCell className="font-semibold">Total</TableCell>
+            <TableCell className="hidden lg:table-cell" />
             <TableCell className="text-right font-semibold tabular-nums">
               {formatCurrency(totalPlanned, "IDR")}
             </TableCell>

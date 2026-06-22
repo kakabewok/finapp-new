@@ -1,10 +1,13 @@
+"use client";
+
+import Link from "next/link";
 import { BudgetSummary } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit2, Trash2, RefreshCw, Archive, CalendarDays } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { getIcon } from "@/lib/icons";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -15,14 +18,17 @@ interface BudgetCardProps {
   velocityStatus?: string;
   onEdit: (budget: BudgetSummary) => void;
   onDelete: (id: string) => void;
+  onRenew?: (budget: BudgetSummary) => void;
+  onArchive?: (budget: BudgetSummary) => void;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
 }
 
-export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, onDelete, isSelectMode, isSelected, onToggleSelect }: BudgetCardProps) {
-  const isOverbudget = budget.status === "overbudget";
-  const isWarning = budget.status === "warning";
+export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, onDelete, onRenew, onArchive, isSelectMode, isSelected, onToggleSelect }: BudgetCardProps) {
+  const isOverbudget = budget.spending_status === "overbudget";
+  const isWarning = budget.spending_status === "warning";
+  const isExpired = new Date(budget.end_date) < new Date();
 
   let progressColor = "bg-emerald-500";
   if (isOverbudget) progressColor = "bg-rose-500";
@@ -54,7 +60,14 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
               size="lg"
             />
             <div>
-              <CardTitle className="text-md">{budget.category_name}</CardTitle>
+              <CardTitle className="text-md flex items-center gap-1.5">
+                <Link href={`/budget/${budget.id}`} className="hover:underline">
+                  {budget.category_name}
+                </Link>
+                {budget.is_recurring && (
+                  <RefreshCw className="h-3.5 w-3.5 text-blue-500" />
+                )}
+              </CardTitle>
               <CardDescription>
                 {formatCurrency(budget.spent_amount, "IDR")} / {formatCurrency(budget.effective_budget, "IDR")}
               </CardDescription>
@@ -87,6 +100,29 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
             </Button>
           </div>
         </div>
+
+        {/* Period + badges row */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <CalendarDays className="h-3 w-3" />
+            <span>{formatDate(budget.start_date)} – {formatDate(budget.end_date)}</span>
+          </div>
+          {isExpired && budget.budget_status === "active" && (
+            <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 text-[10px] h-5">
+              Expired
+            </Badge>
+          )}
+          {budget.budget_status === "archived" && (
+            <Badge variant="secondary" className="text-[10px] h-5">
+              Archived
+            </Badge>
+          )}
+          {budget.rollover_amount > 0 && (
+            <Badge variant="outline" className="text-[10px] h-5 text-blue-600 dark:text-blue-400 border-blue-500/25">
+              +{formatCurrency(budget.rollover_amount, "IDR")} rollover
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1">
@@ -113,6 +149,40 @@ export function BudgetCard({ budget, velocityMessage, velocityStatus, onEdit, on
             indicatorClassName={progressColor}
           />
         </div>
+
+        {/* Action buttons for expired budgets */}
+        {isExpired && budget.budget_status === "active" && !isSelectMode && (
+          <div className="flex gap-2 pt-1">
+            {budget.is_recurring && onRenew && (
+              <Button
+                size="sm"
+                variant="default"
+                className="flex-1 h-8 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRenew(budget);
+                }}
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Renew for next period
+              </Button>
+            )}
+            {!budget.is_recurring && onArchive && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-8 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive(budget);
+                }}
+              >
+                <Archive className="h-3.5 w-3.5 mr-1.5" />
+                Mark as Archived
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

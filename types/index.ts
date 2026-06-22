@@ -142,10 +142,16 @@ export interface Budget {
   id: string;
   user_id: string;
   category_id: string;
-  month: number;
-  year: number;
+  /** @deprecated Use start_date/end_date instead */
+  month?: number;
+  /** @deprecated Use start_date/end_date instead */
+  year?: number;
   amount: number;
-  rollover_enabled: boolean;
+  start_date: string;
+  end_date: string;
+  is_recurring: boolean;
+  is_rollover: boolean;
+  status: 'active' | 'archived';
   rollover_amount: number;
   notes?: string | null;
   created_at: string;
@@ -159,17 +165,33 @@ export interface BudgetSummary {
   category_name: string;
   category_icon: string | null;
   category_color: string | null;
-  month: number;
-  year: number;
+  start_date: string;
+  end_date: string;
+  is_recurring: boolean;
+  is_rollover: boolean;
+  budget_status: 'active' | 'archived';
   budget_amount: number;
   rollover_amount: number;
   effective_budget: number;
   spent_amount: number;
   remaining_amount: number;
   percentage_used: number;
-  status: 'normal' | 'warning' | 'overbudget';
+  spending_status: 'normal' | 'warning' | 'overbudget';
   notes?: string | null;
   created_at?: string;
+}
+
+export interface BudgetHistory {
+  id: string;
+  original_budget_id: string | null;
+  user_id: string;
+  category_id: string;
+  start_date: string;
+  end_date: string;
+  planned_amount: number;
+  total_spent: number;
+  remaining_amount: number;
+  created_at: string;
 }
 
 export interface AIInsight {

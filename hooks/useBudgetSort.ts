@@ -7,7 +7,8 @@ export type SortField =
   | "spent_amount"
   | "remaining_amount"
   | "percentage_used"
-  | "status";
+  | "start_date"
+  | "spending_status";
 
 export type SortOrder = "asc" | "desc";
 
@@ -33,15 +34,15 @@ export function useBudgetSort(budgets: BudgetSummary[]) {
     if (!sortField) return budgets;
 
     return [...budgets].sort((a, b) => {
-      if (sortField === "status") {
+      if (sortField === "spending_status") {
         // Order: Overbudget (3) -> Warning/Near Limit (2) -> Normal (1)
         const weight: Record<string, number> = {
           overbudget: 3,
           warning: 2,
           normal: 1,
         };
-        const aW = weight[a.status] || 0;
-        const bW = weight[b.status] || 0;
+        const aW = weight[a.spending_status] || 0;
+        const bW = weight[b.spending_status] || 0;
         // desc = Overbudget first
         return sortOrder === "asc" ? aW - bW : bW - aW;
       }

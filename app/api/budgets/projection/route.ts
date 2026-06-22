@@ -12,9 +12,7 @@ export async function GET(request: Request) {
     const year = parseInt(searchParams.get("year") || new Date().getFullYear() + "");
 
     // 1. Calculate Date Range for the given month/year
-    // Local time approximation for the boundaries of the month
     const startOfMonth = new Date(year, month - 1, 1).toISOString().split("T")[0];
-    // Next month day 0 is the last day of the current month
     const endOfMonthDate = new Date(year, month, 0);
     const endOfMonth = endOfMonthDate.toISOString().split("T")[0] + "T23:59:59.999Z";
 
@@ -30,16 +28,17 @@ export async function GET(request: Request) {
     if (errIncome) throw errIncome;
     const totalIncome = incomeData.reduce((sum, tx) => sum + Number(tx.amount), 0);
 
-    // 3. Fetch total budget allocated for that month
+    // 3. Fetch active budgets whose periods overlap with the given month
     const { data: budgetsData, error: errBudget } = await supabase
       .from("budgets")
-      .select("amount")
+      .select("amount, rollover_amount")
       .eq("user_id", user.id)
-      .eq("month", month)
-      .eq("year", year);
+      .eq("status", "active")
+      .lte("start_date", endOfMonthDate.toISOString().split("T")[0])
+      .gte("end_date", startOfMonth);
       
     if (errBudget) throw errBudget;
-    const totalBudgetAllocated = budgetsData.reduce((sum, b) => sum + Number(b.amount), 0);
+    const totalBudgetAllocated = budgetsData.reduce((sum, b) => sum + Number(b.amount) + Number(b.rollover_amount || 0), 0);
 
     // 4. Calculate projected remaining
     const projectedRemaining = totalIncome - totalBudgetAllocated;

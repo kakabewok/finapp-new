@@ -7,9 +7,10 @@ import { BudgetTable } from "@/components/budget/BudgetTable";
 import { BudgetForm } from "@/components/budget/BudgetForm";
 import { CopyLastMonthDialog } from "@/components/budget/CopyLastMonthDialog";
 import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
+import { RenewBudgetDialog } from "@/components/budget/RenewBudgetDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Loader2, ListChecks, X, Trash2, Copy, Search, ArrowUp, ArrowDown, LayoutGrid, Table2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,9 +32,7 @@ import {
 type StatusFilter = "all" | "over" | "on_track" | "near_limit";
 
 export default function BudgetPage() {
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-
+  const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
   const [budgets, setBudgets] = useState<BudgetSummary[]>([]);
   const [velocities, setVelocities] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,6 +43,9 @@ export default function BudgetPage() {
   const [editingBudget, setEditingBudget] = useState<BudgetSummary | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Renew dialog state
+  const [renewingBudget, setRenewingBudget] = useState<BudgetSummary | null>(null);
 
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -72,8 +74,8 @@ export default function BudgetPage() {
     setIsLoading(true);
     try {
       const [budgetsRes, velocityRes, catRes] = await Promise.all([
-        fetch(`/api/budgets?month=${month}&year=${year}`),
-        fetch(`/api/budgets/velocity?month=${month}&year=${year}`),
+        fetch(`/api/budgets?status=${activeTab}`),
+        fetch(`/api/budgets/velocity`),
         fetch(`/api/categories`)
       ]);
 
@@ -89,17 +91,17 @@ export default function BudgetPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [month, year]);
+  }, [activeTab]);
 
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
 
-  // Reset search and filter when month/year changes
+  // Reset search and filter when tab changes
   useEffect(() => {
     setSearchQuery("");
     setStatusFilter("all");
-  }, [month, year]);
+  }, [activeTab]);
 
   const handleDelete = async () => {
     if (!deletingId) return;
@@ -156,6 +158,20 @@ export default function BudgetPage() {
     setIsFormOpen(true);
   };
 
+  const handleArchive = async (budget: BudgetSummary) => {
+    try {
+      const res = await fetch(`/api/budgets/${budget.id}/archive`, { method: "POST" });
+      if (res.ok) {
+        toast.success("Budget archived");
+        fetchBudgets();
+      } else {
+        throw new Error("Failed to archive");
+      }
+    } catch (error) {
+      toast.error("Failed to archive budget");
+    }
+  };
+
   const handleCategoryCreated = (newCategory: Category) => {
     setCategories((prev) =>
       [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name))
@@ -176,14 +192,14 @@ export default function BudgetPage() {
 
     // Status filter
     if (statusFilter === "over") {
-      result = result.filter((b) => b.status === "overbudget");
+      result = result.filter((b) => b.spending_status === "overbudget");
     } else if (statusFilter === "near_limit") {
       result = result.filter(
-        (b) => b.status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
+        (b) => b.spending_status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
       );
     } else if (statusFilter === "on_track") {
       result = result.filter(
-        (b) => b.status !== "overbudget" && b.percentage_used < 80
+        (b) => b.spending_status !== "overbudget" && b.percentage_used < 80
       );
     }
 
@@ -206,12 +222,12 @@ export default function BudgetPage() {
 
     return {
       all: searchFiltered.length,
-      over: searchFiltered.filter((b) => b.status === "overbudget").length,
+      over: searchFiltered.filter((b) => b.spending_status === "overbudget").length,
       near_limit: searchFiltered.filter(
-        (b) => b.status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
+        (b) => b.spending_status !== "overbudget" && b.percentage_used >= 80 && b.percentage_used < 100
       ).length,
       on_track: searchFiltered.filter(
-        (b) => b.status !== "overbudget" && b.percentage_used < 80
+        (b) => b.spending_status !== "overbudget" && b.percentage_used < 80
       ).length,
     };
   }, [budgets, searchQuery]);
@@ -224,63 +240,52 @@ export default function BudgetPage() {
   const isSearchActive = searchQuery.trim().length > 0;
   const isFilterActive = statusFilter !== "all";
 
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year} Budget
+            Budget Planner
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your monthly spending limits.</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }).map((_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {new Date(0, i).toLocaleString('default', { month: 'long' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent>
-              {[year - 1, year, year + 1].map((y) => (
-                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <p className="text-muted-foreground mt-1">Manage your spending limits with custom date periods.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Total Budget</p>
-          <p className="text-2xl font-bold mt-2">{formatCurrency(totalBudget, "IDR")}</p>
+      {/* Active / Archived Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "active" | "archived")}>
+        <TabsList>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="archived">Archived</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {activeTab === "active" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">Total Budget</p>
+            <p className="text-2xl font-bold mt-2">{formatCurrency(totalBudget, "IDR")}</p>
+          </div>
+          <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
+            <p className="text-2xl font-bold mt-2">{formatCurrency(totalSpent, "IDR")}</p>
+          </div>
+          <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">Total Remaining</p>
+            <p className={`text-2xl font-bold mt-2 ${totalRemaining < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+              {formatCurrency(totalRemaining, "IDR")}
+            </p>
+          </div>
+          <ProjectedBalanceCard month={currentMonth} year={currentYear} refreshTrigger={budgets} />
         </div>
-        <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
-          <p className="text-2xl font-bold mt-2">{formatCurrency(totalSpent, "IDR")}</p>
-        </div>
-        <div className="p-6 bg-card rounded-lg border flex flex-col justify-center shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Total Remaining</p>
-          <p className={`text-2xl font-bold mt-2 ${totalRemaining < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-            {formatCurrency(totalRemaining, "IDR")}
-          </p>
-        </div>
-        <ProjectedBalanceCard month={month} year={year} refreshTrigger={budgets} />
-      </div>
+      )}
 
       <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-        <h2 className="text-xl font-semibold mb-4 md:mb-0">Category Budgets</h2>
+        <h2 className="text-xl font-semibold mb-4 md:mb-0">
+          {activeTab === "active" ? "Active Budgets" : "Archived Budgets"}
+        </h2>
         <div className="flex items-center justify-between gap-2">
           {/* View toggle */}
           <div className="flex items-center justify-center gap-2">
@@ -315,19 +320,23 @@ export default function BudgetPage() {
               {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
               <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsCopyDialogOpen(true)}
-              className="h-9 sm:h-9"
-            >
-              <Copy className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Copy from...</span>
-            </Button>
+            {activeTab === "active" && (
+              <Button
+                variant="outline"
+                onClick={() => setIsCopyDialogOpen(true)}
+                className="h-9 sm:h-9"
+              >
+                <Copy className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Copy from...</span>
+              </Button>
+            )}
           </div>
-          <Button onClick={handleAddNew} className="h-9 sm:h-9">
-            <Plus className=" h-4 w-4" />
-            Add Budget
-          </Button>
+          {activeTab === "active" && (
+            <Button onClick={handleAddNew} className="h-9 sm:h-9">
+              <Plus className=" h-4 w-4" />
+              Add Budget
+            </Button>
+          )}
         </div>
       </div>
 
@@ -392,7 +401,8 @@ export default function BudgetPage() {
                     { key: "budget_amount" as SortField, label: "Planned Amount" },
                     { key: "spent_amount" as SortField, label: "Spent" },
                     { key: "remaining_amount" as SortField, label: "Remaining" },
-                    { key: "status" as SortField, label: "Status" },
+                    { key: "start_date" as SortField, label: "Period" },
+                    { key: "spending_status" as SortField, label: "Status" },
                   ] as const).map(({ key, label }) => (
                     <Badge
                       key={key}
@@ -419,8 +429,12 @@ export default function BudgetPage() {
         </div>
       ) : budgets.length === 0 ? (
         <div className="text-center py-12 border rounded-lg border-dashed bg-muted/20">
-          <p className="text-muted-foreground mb-4">No budgets set for this month.</p>
-          <Button onClick={handleAddNew} variant="outline">Create your first budget</Button>
+          <p className="text-muted-foreground mb-4">
+            {activeTab === "active" ? "No active budgets." : "No archived budgets."}
+          </p>
+          {activeTab === "active" && (
+            <Button onClick={handleAddNew} variant="outline">Create your first budget</Button>
+          )}
         </div>
       ) : filteredBudgets.length === 0 ? (
         <div className="text-center py-12 border rounded-lg border-dashed bg-muted/20">
@@ -441,6 +455,8 @@ export default function BudgetPage() {
                 velocities={velocities}
                 onEdit={handleEdit}
                 onDelete={setDeletingId}
+                onRenew={(b) => setRenewingBudget(b)}
+                onArchive={handleArchive}
                 isSelectMode={isSelectMode}
                 isSelected={isSelected}
                 onToggleSelect={toggleSelection}
@@ -462,6 +478,8 @@ export default function BudgetPage() {
                   velocityStatus={velocities[budget.id]?.velocityStatus}
                   onEdit={handleEdit}
                   onDelete={setDeletingId}
+                  onRenew={(b) => setRenewingBudget(b)}
+                  onArchive={handleArchive}
                   isSelectMode={isSelectMode}
                   isSelected={isSelected(budget.id)}
                   onToggleSelect={toggleSelection}
@@ -477,8 +495,6 @@ export default function BudgetPage() {
         onOpenChange={setIsFormOpen}
         categories={categories}
         existingBudget={editingBudget}
-        selectedMonth={month}
-        selectedYear={year}
         onSuccess={fetchBudgets}
         onCategoryCreated={handleCategoryCreated}
       />
@@ -486,8 +502,13 @@ export default function BudgetPage() {
       <CopyLastMonthDialog
         open={isCopyDialogOpen}
         onOpenChange={setIsCopyDialogOpen}
-        selectedMonth={month}
-        selectedYear={year}
+        onSuccess={fetchBudgets}
+      />
+
+      <RenewBudgetDialog
+        open={!!renewingBudget}
+        onOpenChange={(open) => !open && setRenewingBudget(null)}
+        budget={renewingBudget}
         onSuccess={fetchBudgets}
       />
 
