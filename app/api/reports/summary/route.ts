@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, subDays, startOfWeek, endOfWeek } from "date-fns";
 
 export async function GET(request: Request) {
   try {
@@ -8,16 +9,32 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const month = parseInt(searchParams.get("month") || new Date().getMonth() + 1 + "");
-    const year = parseInt(searchParams.get("year") || new Date().getFullYear() + "");
+    
+    // Default to current month if not provided
+    const now = new Date();
+    const defaultFrom = startOfMonth(now).toISOString().split('T')[0];
+    const defaultTo = endOfMonth(now).toISOString().split('T')[0];
+    
+    const fromStr = searchParams.get("from") || defaultFrom;
+    const toStr = searchParams.get("to") || defaultTo;
 
-    const dateFrom = new Date(year, month - 1, 1).toISOString();
-    const dateTo = new Date(year, month, 0, 23, 59, 59).toISOString();
+    // Parse dates and set time boundaries
+    const dateFrom = `${fromStr}T00:00:00.000Z`;
+    const dateTo = `${toStr}T23:59:59.999Z`;
 
-    const lastMonthDateFrom = new Date(year, month - 2, 1).toISOString();
-    const lastMonthDateTo = new Date(year, month - 1, 0, 23, 59, 59).toISOString();
+    // Calculate the duration for previous period comparison
+    const fromDate = parseISO(fromStr);
+    const toDate = parseISO(toStr);
+    const daysDiff = differenceInDays(toDate, fromDate) + 1;
 
-    // 1. Transactions this month
+    // Previous period is exactly the same number of days prior
+    const lastPeriodFrom = subDays(fromDate, daysDiff);
+    const lastPeriodTo = subDays(toDate, daysDiff);
+    
+    const lastDateFromStr = `${lastPeriodFrom.toISOString().split('T')[0]}T00:00:00.000Z`;
+    const lastDateToStr = `${lastPeriodTo.toISOString().split('T')[0]}T23:59:59.999Z`;
+
+    // 1. Transactions in selected period
     const { data: currentTx, error: txError } = await supabase
       .from("transactions")
       .select(`*, category:categories(name, icon, color)`)
@@ -26,25 +43,22 @@ export async function GET(request: Request) {
       .lte("transaction_date", dateTo)
       .order("transaction_date", { ascending: true });
 
-    // 2. Transactions last month
+    // 2. Transactions in previous period
     const { data: lastTx } = await supabase
       .from("transactions")
       .select("type, amount")
       .eq("user_id", user.id)
-      .gte("transaction_date", lastMonthDateFrom)
-      .lte("transaction_date", lastMonthDateTo);
+      .gte("transaction_date", lastDateFromStr)
+      .lte("transaction_date", lastDateToStr);
 
-    // 3. Budgets that overlap with this month (using date ranges)
-    const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
-    
+    // 3. Budgets that overlap with this period
     const { data: rawBudgets } = await supabase
       .from("budgets")
       .select(`*, categories(name, icon, color)`)
       .eq("user_id", user.id)
       .eq("status", "active")
-      .lte("start_date", monthEnd)
-      .gte("end_date", monthStart);
+      .lte("start_date", toStr)
+      .gte("end_date", fromStr);
 
     // Compute budget performance summaries
     const budgets = (rawBudgets || []).map((b) => {
@@ -110,22 +124,43 @@ export async function GET(request: Request) {
       percentage: expense > 0 ? (data.value / expense) * 100 : 0
     })).sort((a, b) => b.value - a.value);
 
-    // Daily Trend
-    const dailyMap = new Map<string, number>();
-    const daysInMonth = new Date(year, month, 0).getDate();
-    for (let i = 1; i <= daysInMonth; i++) {
-      dailyMap.set(`${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`, 0);
-    }
+    // Trend Over Time (Auto-scaling)
+    const trendMap = new Map<string, number>();
+    
     (currentTx || []).filter(t => t.type === 'expense').forEach(t => {
-      const dateStr = t.transaction_date.split('T')[0];
-      if (dailyMap.has(dateStr)) {
-         dailyMap.set(dateStr, dailyMap.get(dateStr)! + t.amount);
+      const txDate = new Date(t.transaction_date);
+      let groupKey = '';
+
+      if (daysDiff <= 31) {
+        // Group by day
+        groupKey = txDate.toISOString().split('T')[0];
+      } else if (daysDiff <= 90) {
+        // Group by week
+        const wStart = startOfWeek(txDate, { weekStartsOn: 1 }).toISOString().split('T')[0];
+        groupKey = `Week of ${wStart}`;
+      } else {
+        // Group by month
+        const mStart = startOfMonth(txDate).toISOString().split('T')[0];
+        const mName = txDate.toLocaleString("default", { month: "short", year: "numeric" });
+        groupKey = mName;
       }
+      
+      trendMap.set(groupKey, (trendMap.get(groupKey) || 0) + t.amount);
     });
-    const dailyTrend = Array.from(dailyMap.entries()).map(([date, amount]) => ({
+
+    const dailyTrend = Array.from(trendMap.entries()).map(([date, amount]) => ({
       date,
       amount
     }));
+    
+    // Sort dailyTrend correctly if they are dates
+    if (daysDiff <= 31 || daysDiff <= 90) {
+      dailyTrend.sort((a, b) => {
+        const dateA = a.date.startsWith("Week") ? new Date(a.date.split(" ")[2]).getTime() : new Date(a.date).getTime();
+        const dateB = b.date.startsWith("Week") ? new Date(b.date.split(" ")[2]).getTime() : new Date(b.date).getTime();
+        return dateA - dateB;
+      });
+    }
 
     // Top Transactions
     const topTransactions = [...(currentTx || [])]

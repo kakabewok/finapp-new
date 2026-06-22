@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateFinancialInsights } from "@/lib/gemini";
 import { formatCurrency } from "@/lib/utils";
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, subDays } from "date-fns";
 
 export async function GET(request: Request) {
   try {
@@ -10,34 +11,35 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const month = parseInt(searchParams.get("month") || new Date().getMonth() + 1 + "");
-    const year = parseInt(searchParams.get("year") || new Date().getFullYear() + "");
-
-    // Fetch required data to feed to AI
-    const url = new URL(request.url);
-    const summaryUrl = `${url.origin}/api/reports/summary?month=${month}&year=${year}`;
     
-    // Instead of making a full HTTP request to ourselves, let's just use the query logic
-    // But to keep it simple, we can fetch from our own endpoint but pass the auth cookie manually.
-    // Or just repeat the core aggregation logic. It's cleaner to just fetch the summary endpoint.
+    // Default to current month if not provided
+    const now = new Date();
+    const defaultFrom = startOfMonth(now).toISOString().split('T')[0];
+    const defaultTo = endOfMonth(now).toISOString().split('T')[0];
     
-    // Actually, making an HTTP fetch to the same app during a request might hang if we don't pass cookies,
-    // and sometimes Next.js doesn't like absolute URL fetches to itself in serverless.
-    // Let's do the DB query directly.
+    const fromStr = searchParams.get("from") || defaultFrom;
+    const toStr = searchParams.get("to") || defaultTo;
 
-    const dateFrom = new Date(year, month - 1, 1).toISOString();
-    const dateTo = new Date(year, month, 0, 23, 59, 59).toISOString();
+    // Parse dates and set time boundaries
+    const dateFrom = `${fromStr}T00:00:00.000Z`;
+    const dateTo = `${toStr}T23:59:59.999Z`;
 
-    const lastMonthDateFrom = new Date(year, month - 2, 1).toISOString();
-    const lastMonthDateTo = new Date(year, month - 1, 0, 23, 59, 59).toISOString();
+    // Calculate the duration for previous period comparison
+    const fromDate = parseISO(fromStr);
+    const toDate = parseISO(toStr);
+    const daysDiff = differenceInDays(toDate, fromDate) + 1;
 
-    const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
+    // Previous period is exactly the same number of days prior
+    const lastPeriodFrom = subDays(fromDate, daysDiff);
+    const lastPeriodTo = subDays(toDate, daysDiff);
+    
+    const lastDateFromStr = `${lastPeriodFrom.toISOString().split('T')[0]}T00:00:00.000Z`;
+    const lastDateToStr = `${lastPeriodTo.toISOString().split('T')[0]}T23:59:59.999Z`;
 
     const [{ data: currentTx }, { data: lastTx }, { data: rawBudgets }] = await Promise.all([
       supabase.from("transactions").select("type, amount, category_id, category:categories(name)").eq("user_id", user.id).gte("transaction_date", dateFrom).lte("transaction_date", dateTo),
-      supabase.from("transactions").select("type, amount").eq("user_id", user.id).gte("transaction_date", lastMonthDateFrom).lte("transaction_date", lastMonthDateTo),
-      supabase.from("budgets").select("*, categories(name)").eq("user_id", user.id).eq("status", "active").lte("start_date", monthEnd).gte("end_date", monthStart)
+      supabase.from("transactions").select("type, amount").eq("user_id", user.id).gte("transaction_date", lastDateFromStr).lte("transaction_date", lastDateToStr),
+      supabase.from("budgets").select("*, categories(name)").eq("user_id", user.id).eq("status", "active").lte("start_date", toStr).gte("end_date", fromStr)
     ]);
 
     const income = (currentTx || []).filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
