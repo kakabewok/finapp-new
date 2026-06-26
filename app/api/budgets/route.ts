@@ -10,6 +10,7 @@ const budgetSchema = z.object({
   is_recurring: z.boolean().default(false),
   is_rollover: z.boolean().default(false),
   notes: z.string().nullable().optional(),
+  workspace_id: z.string().uuid().nullable().optional(),
 }).refine((data) => new Date(data.end_date) > new Date(data.start_date), {
   message: "End date must be after start date",
   path: ["end_date"],
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "active";
+    const workspaceId = searchParams.get("workspace_id");
 
     // 1. Fetch budgets for this user with category info
     let query = supabase
@@ -36,8 +38,13 @@ export async function GET(request: Request) {
           color,
           type
         )
-      `)
-      .eq("user_id", user.id);
+      `);
+
+    if (workspaceId) {
+      query = query.eq("workspace_id", workspaceId);
+    } else {
+      query = query.is("workspace_id", null).eq("user_id", user.id);
+    }
 
     if (status !== "all") {
       query = query.eq("status", status);
@@ -63,14 +70,21 @@ export async function GET(request: Request) {
     const earliestStart = budgets.reduce((min, b) => b.start_date < min ? b.start_date : min, budgets[0].start_date);
     const latestEnd = budgets.reduce((max, b) => b.end_date > max ? b.end_date : max, budgets[0].end_date);
 
-    const { data: transactions, error: txError } = await supabase
+    let txQuery = supabase
       .from("transactions")
       .select("amount, category_id, transaction_date")
-      .eq("user_id", user.id)
       .eq("type", "expense")
       .in("category_id", categoryIds)
       .gte("transaction_date", earliestStart)
       .lte("transaction_date", latestEnd);
+
+    if (workspaceId) {
+      txQuery = txQuery.eq("workspace_id", workspaceId);
+    } else {
+      txQuery = txQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: transactions, error: txError } = await txQuery;
 
     if (txError) {
       console.error("Error fetching transactions:", txError);
@@ -144,6 +158,7 @@ export async function POST(request: Request) {
       .from("budgets")
       .insert({
         user_id: user.id,
+        workspace_id: validatedData.workspace_id || null,
         category_id: validatedData.category_id,
         start_date: validatedData.start_date,
         end_date: validatedData.end_date,

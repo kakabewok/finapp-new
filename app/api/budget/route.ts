@@ -11,6 +11,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspace_id");
+
     // Get current month date range
     const date = new Date();
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
@@ -32,14 +35,21 @@ export async function GET(request: Request) {
 
     // 2. Fetch expenses for this month for those categories
     const categoryIds = categories.map(c => c.id);
-    const { data: transactions, error: txError } = await supabase
+    let txQuery = supabase
       .from("transactions")
       .select("amount, category_id")
-      .eq("user_id", user.id)
       .eq("type", "expense")
       .gte("transaction_date", firstDay)
       .lte("transaction_date", lastDay)
       .in("category_id", categoryIds);
+
+    if (workspaceId) {
+      txQuery = txQuery.eq("workspace_id", workspaceId);
+    } else {
+      txQuery = txQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: transactions, error: txError } = await txQuery;
 
     if (txError) throw txError;
 

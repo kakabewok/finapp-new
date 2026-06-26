@@ -7,15 +7,25 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspace_id");
+
     // Fetch active budgets with category info
-    const { data: budgets, error } = await supabase
+    let budgetsQuery = supabase
       .from("budgets")
       .select(`
         *,
         categories (name, icon, color)
       `)
-      .eq("user_id", user.id)
       .eq("status", "active");
+
+    if (workspaceId) {
+      budgetsQuery = budgetsQuery.eq("workspace_id", workspaceId);
+    } else {
+      budgetsQuery = budgetsQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: budgets, error } = await budgetsQuery;
 
     if (error) throw error;
 
@@ -26,14 +36,21 @@ export async function GET(request: Request) {
     const earliestStart = (budgets || []).reduce((min, b) => b.start_date < min ? b.start_date : min, budgets![0].start_date);
     const latestEnd = (budgets || []).reduce((max, b) => b.end_date > max ? b.end_date : max, budgets![0].end_date);
 
-    const { data: transactions } = await supabase
+    let txQuery = supabase
       .from("transactions")
       .select("amount, category_id, transaction_date")
-      .eq("user_id", user.id)
       .eq("type", "expense")
       .in("category_id", categoryIds)
       .gte("transaction_date", earliestStart)
       .lte("transaction_date", latestEnd);
+
+    if (workspaceId) {
+      txQuery = txQuery.eq("workspace_id", workspaceId);
+    } else {
+      txQuery = txQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: transactions } = await txQuery;
 
     const today = new Date();
 

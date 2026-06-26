@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     
     const fromStr = searchParams.get("from") || defaultFrom;
     const toStr = searchParams.get("to") || defaultTo;
+    const workspaceId = searchParams.get("workspace_id");
 
     // Parse dates and set time boundaries
     const dateFrom = `${fromStr}T00:00:00.000Z`;
@@ -35,30 +36,51 @@ export async function GET(request: Request) {
     const lastDateToStr = `${lastPeriodTo.toISOString().split('T')[0]}T23:59:59.999Z`;
 
     // 1. Transactions in selected period
-    const { data: currentTx, error: txError } = await supabase
+    let currentTxQuery = supabase
       .from("transactions")
       .select(`*, category:categories(name, icon, color)`)
-      .eq("user_id", user.id)
       .gte("transaction_date", dateFrom)
       .lte("transaction_date", dateTo)
       .order("transaction_date", { ascending: true });
 
+    if (workspaceId) {
+      currentTxQuery = currentTxQuery.eq("workspace_id", workspaceId);
+    } else {
+      currentTxQuery = currentTxQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: currentTx, error: txError } = await currentTxQuery;
+
     // 2. Transactions in previous period
-    const { data: lastTx } = await supabase
+    let lastTxQuery = supabase
       .from("transactions")
       .select("type, amount")
-      .eq("user_id", user.id)
       .gte("transaction_date", lastDateFromStr)
       .lte("transaction_date", lastDateToStr);
 
+    if (workspaceId) {
+      lastTxQuery = lastTxQuery.eq("workspace_id", workspaceId);
+    } else {
+      lastTxQuery = lastTxQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: lastTx } = await lastTxQuery;
+
     // 3. Budgets that overlap with this period
-    const { data: rawBudgets } = await supabase
+    let budgetsQuery = supabase
       .from("budgets")
       .select(`*, categories(name, icon, color)`)
-      .eq("user_id", user.id)
       .eq("status", "active")
       .lte("start_date", toStr)
       .gte("end_date", fromStr);
+
+    if (workspaceId) {
+      budgetsQuery = budgetsQuery.eq("workspace_id", workspaceId);
+    } else {
+      budgetsQuery = budgetsQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: rawBudgets } = await budgetsQuery;
 
     // Compute budget performance summaries
     const budgets = (rawBudgets || []).map((b) => {

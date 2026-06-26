@@ -1,3 +1,48 @@
+// =============================================
+// Workspace Types
+// =============================================
+
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+export interface Workspace {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+}
+
+export interface WorkspaceMember {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  role: WorkspaceRole;
+  joined_at: string;
+  // Joined data from auth.users metadata
+  email?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspace_id: string;
+  token: string;
+  created_by: string;
+  expires_at: string;
+  status: 'pending' | 'used' | 'revoked';
+  created_at: string;
+  // Joined data
+  workspace?: Workspace;
+}
+
+export interface WorkspaceWithRole extends Workspace {
+  role: WorkspaceRole;
+}
+
+// =============================================
+// Core Types
+// =============================================
+
 export interface Category {
   id: string;
   user_id: string;
@@ -42,6 +87,7 @@ export interface Transaction {
   items: TransactionItem[] | null;
   tags: string[] | null;
   source: 'manual' | 'scan';
+  workspace_id?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -67,6 +113,7 @@ export interface TransactionFormData {
   receipt_url?: string;
   receipt_public_id?: string;
   source: 'manual' | 'scan';
+  workspace_id?: string | null;
 }
 
 export interface ScanResult {
@@ -154,6 +201,7 @@ export interface Budget {
   status: 'active' | 'archived';
   rollover_amount: number;
   notes?: string | null;
+  workspace_id?: string | null;
   created_at: string;
   updated_at: string;
 }

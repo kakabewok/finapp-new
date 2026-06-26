@@ -16,6 +16,7 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSelection } from "@/hooks/useSelection";
 import { useBudgetSort, SortField } from "@/hooks/useBudgetSort";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,6 +44,8 @@ export default function BudgetPage() {
   const [editingBudget, setEditingBudget] = useState<BudgetSummary | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  const { activeWorkspaceId, canPerform } = useWorkspace();
 
   // Renew dialog state
   const [renewingBudget, setRenewingBudget] = useState<BudgetSummary | null>(null);
@@ -73,9 +76,16 @@ export default function BudgetPage() {
   const fetchBudgets = useCallback(async () => {
     setIsLoading(true);
     try {
+      const url = activeWorkspaceId
+        ? `/api/budgets?status=${activeTab}&workspace_id=${activeWorkspaceId}`
+        : `/api/budgets?status=${activeTab}`;
+      const velocityUrl = activeWorkspaceId
+        ? `/api/budgets/velocity?workspace_id=${activeWorkspaceId}`
+        : `/api/budgets/velocity`;
+
       const [budgetsRes, velocityRes, catRes] = await Promise.all([
-        fetch(`/api/budgets?status=${activeTab}`),
-        fetch(`/api/budgets/velocity`),
+        fetch(url),
+        fetch(velocityUrl),
         fetch(`/api/categories`)
       ]);
 
@@ -91,7 +101,7 @@ export default function BudgetPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, activeWorkspaceId]);
 
   useEffect(() => {
     fetchBudgets();
@@ -320,7 +330,7 @@ export default function BudgetPage() {
               {isSelectMode ? <X className="h-4 w-4 sm:mr-2" /> : <ListChecks className="h-4 w-4 sm:mr-2" />}
               <span className="hidden sm:inline">{isSelectMode ? "Cancel" : "Select"}</span>
             </Button>
-            {activeTab === "active" && (
+            {activeTab === "active" && canPerform("add_data") && (
               <Button
                 variant="outline"
                 onClick={() => setIsCopyDialogOpen(true)}
@@ -331,7 +341,7 @@ export default function BudgetPage() {
               </Button>
             )}
           </div>
-          {activeTab === "active" && (
+          {activeTab === "active" && canPerform("add_data") && (
             <Button onClick={handleAddNew} className="h-9 sm:h-9">
               <Plus className=" h-4 w-4" />
               Add Budget
@@ -497,12 +507,14 @@ export default function BudgetPage() {
         existingBudget={editingBudget}
         onSuccess={fetchBudgets}
         onCategoryCreated={handleCategoryCreated}
+        workspaceId={activeWorkspaceId}
       />
 
       <CopyLastMonthDialog
         open={isCopyDialogOpen}
         onOpenChange={setIsCopyDialogOpen}
         onSuccess={fetchBudgets}
+        workspaceId={activeWorkspaceId}
       />
 
       <RenewBudgetDialog

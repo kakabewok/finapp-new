@@ -5,6 +5,7 @@ import { seedDefaultCategories } from "@/lib/supabase/seed-categories";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("next");
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
 
   if (code) {
@@ -17,10 +18,13 @@ export async function GET(request: Request) {
       if (user) {
         await seedDefaultCategories(supabase, user.id);
       }
-      return NextResponse.redirect(`${baseUrl}/dashboard`);
+      // Redirect to the 'next' URL if provided, otherwise to dashboard
+      const redirectUrl = next ? `${baseUrl}${next}` : `${baseUrl}/dashboard`;
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
   // Redirect to login page with an error if code exchange failed or no code is present
   return NextResponse.redirect(`${baseUrl}/login?error=auth`);
 }
+

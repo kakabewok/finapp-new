@@ -11,17 +11,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState("30d");
+  const { activeWorkspaceId } = useWorkspace();
 
-  const fetchDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(`/api/dashboard?range=${dateRange}`);
-      if (res.ok) {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const url = activeWorkspaceId
+          ? `/api/dashboard?range=${dateRange}&workspace_id=${activeWorkspaceId}`
+          : `/api/dashboard?range=${dateRange}`;
+        const res = await fetch(url);
+        if (res.ok) {
         const json = await res.json();
         setData(json);
       }
@@ -34,7 +39,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+  }, [dateRange, activeWorkspaceId]);
 
   return (
     <div className="space-y-6 animate-fade-in">

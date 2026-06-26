@@ -12,6 +12,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateRange = searchParams.get("range") || "30d"; // 7d, 30d, 90d, 1y, all
+    const workspaceId = searchParams.get("workspace_id");
     
     // Calculate dates
     const today = new Date();
@@ -47,23 +48,37 @@ export async function GET(request: Request) {
     const prevEndIso = previousEndDate.toISOString().split("T")[0];
 
     // 1. Fetch current period transactions
-    const { data: currentTx, error: err1 } = await supabase
+    let query1 = supabase
       .from("transactions")
       .select("amount, type, transaction_date, category_id, category:categories(name, color, icon)")
-      .eq("user_id", user.id)
       .gte("transaction_date", startIso);
+
+    if (workspaceId) {
+      query1 = query1.eq("workspace_id", workspaceId);
+    } else {
+      query1 = query1.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: currentTx, error: err1 } = await query1;
 
     if (err1) throw err1;
 
     // 2. Fetch previous period transactions (for % change calculation)
     let previousTx: any[] = [];
     if (dateRange !== "all") {
-      const { data: prevTx, error: err2 } = await supabase
+      let query2 = supabase
         .from("transactions")
         .select("amount, type")
-        .eq("user_id", user.id)
         .gte("transaction_date", prevStartIso)
         .lt("transaction_date", prevEndIso);
+
+      if (workspaceId) {
+        query2 = query2.eq("workspace_id", workspaceId);
+      } else {
+        query2 = query2.is("workspace_id", null).eq("user_id", user.id);
+      }
+      
+      const { data: prevTx, error: err2 } = await query2;
       
       if (err2) throw err2;
       previousTx = prevTx;

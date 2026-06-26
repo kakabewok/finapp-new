@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { useIsDeveloper } from "@/hooks/useIsDeveloper";
+import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 const navItems = [
   {
@@ -68,6 +70,7 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
   const router = useRouter();
   const supabase = createSupabaseClient();
   const isDeveloper = useIsDeveloper(currentUser?.email);
+  const { activeWorkspaceId } = useWorkspace();
 
   const handleLogout = async () => {
     try {
@@ -88,7 +91,10 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
             <Wallet className="h-6 w-6 text-primary" />
             Siboros
           </h2>
-          <div className="space-y-1 mt-6">
+          <div className="mt-3 mb-4 px-1">
+            <WorkspaceSwitcher />
+          </div>
+          <div className="space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
@@ -108,6 +114,22 @@ export function Sidebar({ className, currentUser }: { className?: string, curren
                 </Button>
               );
             })}
+
+            {activeWorkspaceId && (
+              <Button
+                variant={pathname.startsWith("/workspace/settings") ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  pathname.startsWith("/workspace/settings") ? "font-medium bg-secondary text-secondary-foreground" : "text-muted-foreground"
+                )}
+                asChild
+              >
+                <Link href="/workspace/settings">
+                  <Settings className={cn("mr-2 h-4 w-4", pathname.startsWith("/workspace/settings") ? "text-primary" : "")} />
+                  Workspace Settings
+                </Link>
+              </Button>
+            )}
 
             {isDeveloper && (
               <Button

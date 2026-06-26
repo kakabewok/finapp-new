@@ -10,16 +10,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export function RecentTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { activeWorkspaceId } = useWorkspace();
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/transactions?limit=5");
+        const url = activeWorkspaceId 
+          ? `/api/transactions?limit=5&workspace_id=${activeWorkspaceId}` 
+          : `/api/transactions?limit=5`;
+        const res = await fetch(url);
         if (res.ok) {
           const { data } = await res.json();
           setTransactions(data);
@@ -31,7 +36,7 @@ export function RecentTransactions() {
       }
     };
     fetchTransactions();
-  }, []);
+  }, [activeWorkspaceId]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {

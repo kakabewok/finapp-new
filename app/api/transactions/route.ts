@@ -34,6 +34,7 @@ const transactionSchema = z.object({
   items: z.array(transactionItemSchema).nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
   source: z.enum(["manual", "scan"]).default("manual"),
+  workspace_id: z.string().uuid().nullable().optional(),
 });
 
 export async function GET(request: Request) {
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
     const search = searchParams.get("search");
     const sortBy = searchParams.get("sortBy") || "transaction_date";
     const sortOrder = searchParams.get("sortOrder") || "desc";
+    const workspaceId = searchParams.get("workspace_id");
 
     const offset = (page - 1) * limit;
 
@@ -65,8 +67,14 @@ export async function GET(request: Request) {
       .select(`
         *,
         category:categories(*)
-      `, { count: "exact" })
-      .eq("user_id", user.id);
+      `, { count: "exact" });
+
+    // Workspace filtering
+    if (workspaceId) {
+      query = query.eq("workspace_id", workspaceId);
+    } else {
+      query = query.is("workspace_id", null).eq("user_id", user.id);
+    }
 
     // Apply filters
     if (dateFrom) query = query.gte("transaction_date", dateFrom);
@@ -124,6 +132,7 @@ export async function POST(request: Request) {
       .insert({
         ...validatedData,
         user_id: user.id,
+        workspace_id: validatedData.workspace_id || null,
       })
       .select()
       .single();

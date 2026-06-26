@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 import { Wallet } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
   const supabase = createSupabaseClient();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -34,7 +36,7 @@ export default function LoginPage() {
       }
 
       toast.success("Successfully logged in!");
-      router.push("/dashboard");
+      router.push(nextUrl || "/dashboard");
       router.refresh();
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -45,10 +47,13 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
+      const callbackUrl = nextUrl
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`
+        : `${window.location.origin}/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
         },
       });
 
@@ -142,5 +147,17 @@ export default function LoginPage() {
         </div>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <Card className="border-border/40 shadow-xl bg-card/80 backdrop-blur-xl">
+        <CardContent className="py-12 text-center text-muted-foreground">Loading...</CardContent>
+      </Card>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

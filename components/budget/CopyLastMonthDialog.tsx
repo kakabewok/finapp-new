@@ -45,12 +45,14 @@ interface CopyLastMonthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  workspaceId?: string | null;
 }
 
 export function CopyLastMonthDialog({
   open,
   onOpenChange,
   onSuccess,
+  workspaceId,
 }: CopyLastMonthDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -209,6 +211,7 @@ export function CopyLastMonthDialog({
               end_date: endStr,
               is_recurring: false,
               is_rollover: false,
+              workspace_id: workspaceId || null,
             }),
           })
         )

@@ -52,6 +52,9 @@ export async function GET(request: Request, context: Context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // RLS handles access control for both personal and workspace transactions
+    // For personal: user_id must match
+    // For workspace: user must be a member
     const { data, error } = await supabase
       .from("transactions")
       .select(`
@@ -59,7 +62,6 @@ export async function GET(request: Request, context: Context) {
         category:categories(*)
       `)
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (error || !data) {
@@ -88,11 +90,11 @@ export async function PUT(request: Request, context: Context) {
     const body = await request.json();
     const validatedData = updateTransactionSchema.parse(body);
 
+    // RLS handles access control
     const { data, error } = await supabase
       .from("transactions")
       .update(validatedData)
       .eq("id", id)
-      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -128,18 +130,17 @@ export async function DELETE(request: Request, context: Context) {
       .from("transactions")
       .select("receipt_public_id")
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (transaction?.receipt_public_id) {
       await deleteFromCloudinary(transaction.receipt_public_id);
     }
     
+    // RLS handles access control
     const { error } = await supabase
       .from("transactions")
       .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting transaction:", error);

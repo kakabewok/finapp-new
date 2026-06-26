@@ -62,11 +62,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSelection } from "@/hooks/useSelection";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { activeWorkspaceId, canPerform } = useWorkspace();
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,6 +143,7 @@ export function TransactionList() {
         if (dateFrom) params.append("dateFrom", dateFrom);
         if (dateTo) params.append("dateTo", dateTo);
       }
+      if (activeWorkspaceId) params.append("workspace_id", activeWorkspaceId);
 
       // Sort params
       params.append("sortBy", sortBy);
@@ -163,7 +166,7 @@ export function TransactionList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter, categoryFilter, datePreset, dateFrom, dateTo, sortBy, sortOrder]);
+  }, [page, debouncedSearch, typeFilter, categoryFilter, datePreset, dateFrom, dateTo, sortBy, sortOrder, activeWorkspaceId]);
 
   useEffect(() => {
     fetchTransactions();
@@ -294,17 +297,19 @@ export function TransactionList() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant={isSelectMode ? "secondary" : "outline"}
-            onClick={() => {
-              setIsSelectMode(!isSelectMode);
-              clearSelection();
-            }}
-            className="h-9 md:h-9"
-          >
-            {isSelectMode ? <X className="h-4 w-4 md:mr-2" /> : <ListChecks className="h-4 w-4 md:mr-2" />}
-            <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
-          </Button>
+          {canPerform("delete_own_data") && (
+            <Button
+              variant={isSelectMode ? "secondary" : "outline"}
+              onClick={() => {
+                setIsSelectMode(!isSelectMode);
+                clearSelection();
+              }}
+              className="h-9 md:h-9"
+            >
+              {isSelectMode ? <X className="h-4 w-4 md:mr-2" /> : <ListChecks className="h-4 w-4 md:mr-2" />}
+              <span className="hidden md:inline">{isSelectMode ? "Cancel" : "Select"}</span>
+            </Button>
+          )}
 
           {/* Sort Controls — mobile only, desktop uses column headers */}
           <DropdownMenu>
@@ -353,29 +358,31 @@ export function TransactionList() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="ml-auto h-9 md:h-9">
-                <Plus className="mr-0 h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Add Transaction</span>
-                <span className="md:hidden">Add</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href="/transactions/new" className="cursor-pointer">
-                  <Edit2 className="mr-2 h-4 w-4" />
-                  <span>Add Manually</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/scan" className="cursor-pointer">
-                  <ScanLine className="mr-2 h-4 w-4" />
-                  <span>Scan Receipt</span>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canPerform("add_data") && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="ml-auto h-9 md:h-9">
+                  <Plus className="mr-0 h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Add Transaction</span>
+                  <span className="md:hidden">Add</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/transactions/new" className="cursor-pointer">
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    <span>Add Manually</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/scan" className="cursor-pointer">
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    <span>Scan Receipt</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -469,26 +476,30 @@ export function TransactionList() {
                 </div>
 
                 <div className="flex flex-col items-center justify-center shrink-0 gap-1">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-9 text-muted-foreground hover:text-foreground"
-                    aria-label="Edit transaction"
-                  >
-                    <Link href={`/transactions/${transaction.id}/edit`}>
-                      <Edit2 className="h-5 w-5" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setTransactionToDelete(transaction.id)}
-                    aria-label="Delete transaction"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
+                  {canPerform("edit_own_data") && (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-9 text-muted-foreground hover:text-foreground"
+                      aria-label="Edit transaction"
+                    >
+                      <Link href={`/transactions/${transaction.id}/edit`}>
+                        <Edit2 className="h-5 w-5" />
+                      </Link>
+                    </Button>
+                  )}
+                  {canPerform("delete_own_data") && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setTransactionToDelete(transaction.id)}
+                      aria-label="Delete transaction"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -640,17 +651,23 @@ export function TransactionList() {
                         <DropdownMenuItem asChild>
                           <Link href={`/transactions/${transaction.id}`}>View Details</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/transactions/${transaction.id}/edit`}>Edit</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
-                          onClick={() => setTransactionToDelete(transaction.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        {canPerform("edit_own_data") && (
+                          <DropdownMenuItem asChild>
+                            <Link href={`/transactions/${transaction.id}/edit`}>Edit</Link>
+                          </DropdownMenuItem>
+                        )}
+                        {canPerform("delete_own_data") && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                              onClick={() => setTransactionToDelete(transaction.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

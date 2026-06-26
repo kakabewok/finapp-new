@@ -31,9 +31,10 @@ interface BudgetFormProps {
   existingBudget?: BudgetSummary | null;
   onSuccess: () => void;
   onCategoryCreated?: (category: Category) => void;
+  workspaceId?: string | null;
 }
 
-export function BudgetForm({ open, onOpenChange, categories, existingBudget, onSuccess, onCategoryCreated }: BudgetFormProps) {
+export function BudgetForm({ open, onOpenChange, categories, existingBudget, onSuccess, onCategoryCreated, workspaceId }: BudgetFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [categoryId, setCategoryId] = useState(existingBudget?.category_id || "");
   const [amount, setAmount] = useState(existingBudget?.budget_amount?.toString() || "");
@@ -130,6 +131,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, onS
         is_recurring: isRecurring,
         is_rollover: isRecurring ? isRollover : false,
         notes: notes || null,
+        workspace_id: workspaceId || null,
       } : {
         category_id: categoryId,
         start_date: formatDate(startDate),
@@ -138,6 +140,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, onS
         is_recurring: isRecurring,
         is_rollover: isRecurring ? isRollover : false,
         notes: notes || null,
+        workspace_id: workspaceId || null,
       };
 
       const res = await fetch(url, {
