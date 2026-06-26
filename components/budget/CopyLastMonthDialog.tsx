@@ -76,7 +76,8 @@ export function CopyLastMonthDialog({
   const fetchAvailablePeriods = async () => {
     setIsFetchingPeriods(true);
     try {
-      const res = await fetch(`/api/budgets/available-months?_t=${Date.now()}`, { cache: "no-store" });
+      const url = `/api/budgets/available-months?_t=${Date.now()}${workspaceId ? `&workspace_id=${workspaceId}` : ""}`;
+      const res = await fetch(url, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setAvailablePeriods(data.periods || []);
@@ -100,10 +101,8 @@ export function CopyLastMonthDialog({
     setIsLoading(true);
     setHasFetched(false);
     try {
-      const res = await fetch(
-        `/api/budgets/copy-last-month?sourceStart=${start}&sourceEnd=${end}&_t=${Date.now()}`,
-        { cache: "no-store" }
-      );
+      const url = `/api/budgets/copy-last-month?sourceStart=${start}&sourceEnd=${end}&_t=${Date.now()}${workspaceId ? `&workspace_id=${workspaceId}` : ""}`;
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch");
 
       const data = await res.json();

@@ -115,14 +115,15 @@ export function TransactionList() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("/api/categories");
+        const url = activeWorkspaceId ? `/api/categories?workspace_id=${activeWorkspaceId}` : "/api/categories";
+        const res = await fetch(url);
         if (res.ok) setCategories(await res.json());
       } catch (error) {
         console.error("Failed to fetch categories", error);
       }
     };
     fetchCategories();
-  }, []);
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
@@ -177,7 +178,8 @@ export function TransactionList() {
 
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/transactions/${transactionToDelete}`, {
+      const url = `/api/transactions/${transactionToDelete}${activeWorkspaceId ? `?workspace_id=${activeWorkspaceId}` : ""}`;
+      const res = await fetch(url, {
         method: "DELETE",
       });
 
@@ -202,7 +204,10 @@ export function TransactionList() {
       const res = await fetch("/api/transactions/bulk", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+        body: JSON.stringify({ 
+          ids: Array.from(selectedIds),
+          workspace_id: activeWorkspaceId || null 
+        }),
       });
       if (res.ok) {
         const result = await res.json();

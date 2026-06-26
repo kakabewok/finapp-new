@@ -11,6 +11,7 @@ const patchSchema = z.object({
   is_rollover: z.boolean().optional(),
   status: z.enum(["active", "archived"]).optional(),
   notes: z.string().nullable().optional(),
+  workspace_id: z.string().uuid().nullable().optional(),
 });
 
 type Context = {
@@ -119,13 +120,18 @@ export async function PATCH(request: Request, context: Context) {
       }
     }
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from("budgets")
       .update(updatePayload)
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .select()
-      .single();
+      .eq("id", id);
+
+    if (validatedData.workspace_id) {
+      updateQuery = updateQuery.eq("workspace_id", validatedData.workspace_id);
+    } else {
+      updateQuery = updateQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data, error } = await updateQuery.select().single();
 
     if (error) throw error;
     return NextResponse.json(data);
@@ -145,11 +151,21 @@ export async function DELETE(request: Request, context: Context) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { error } = await supabase
+    const body = await request.json().catch(() => ({}));
+    const { workspace_id } = body;
+
+    let deleteQuery = supabase
       .from("budgets")
       .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("id", id);
+
+    if (workspace_id) {
+      deleteQuery = deleteQuery.eq("workspace_id", workspace_id);
+    } else {
+      deleteQuery = deleteQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) throw error;
     return new NextResponse(null, { status: 204 });

@@ -6,11 +6,11 @@ const categorySchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   icon: z.string().nullable().optional(),
   color: z.string().nullable().optional(),
-  budget_monthly: z.number().nullable().optional(),
   type: z.enum(["expense", "income", "both"]),
+  workspace_id: z.string().uuid().nullable().optional(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
     
@@ -20,11 +20,18 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("name");
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspace_id");
+
+    let query = supabase.from("categories").select("*").order("name");
+
+    if (workspaceId) {
+      query = query.eq("workspace_id", workspaceId);
+    } else {
+      query = query.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching categories:", error);
@@ -52,13 +59,19 @@ export async function POST(request: Request) {
     // Validate request body
     const validatedData = categorySchema.parse(body);
 
-    // Check for duplicate category name case-insensitively for this user
-    const { data: existing, error: checkError } = await supabase
+    let duplicateQuery = supabase
       .from("categories")
       .select("id")
-      .eq("user_id", user.id)
       .ilike("name", validatedData.name.trim())
       .limit(1);
+
+    if (validatedData.workspace_id) {
+      duplicateQuery = duplicateQuery.eq("workspace_id", validatedData.workspace_id);
+    } else {
+      duplicateQuery = duplicateQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: existing, error: checkError } = await duplicateQuery;
 
     if (checkError) {
       console.error("Error checking duplicate category:", checkError);
@@ -72,6 +85,7 @@ export async function POST(request: Request) {
         ...validatedData,
         user_id: user.id,
         is_default: false,
+        workspace_id: validatedData.workspace_id || null,
       })
       .select()
       .single();

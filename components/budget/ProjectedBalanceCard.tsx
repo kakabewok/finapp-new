@@ -11,9 +11,10 @@ interface ProjectedBalanceCardProps {
   month: number;
   year: number;
   refreshTrigger?: any;
+  workspaceId?: string | null;
 }
 
-export function ProjectedBalanceCard({ month, year, refreshTrigger }: ProjectedBalanceCardProps) {
+export function ProjectedBalanceCard({ month, year, refreshTrigger, workspaceId }: ProjectedBalanceCardProps) {
   const [data, setData] = useState<{
     totalIncome: number;
     totalBudgetAllocated: number;
@@ -24,7 +25,11 @@ export function ProjectedBalanceCard({ month, year, refreshTrigger }: ProjectedB
   const fetchProjection = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/budgets/projection?month=${month}&year=${year}`);
+      let url = `/api/budgets/projection?month=${month}&year=${year}`;
+      if (workspaceId) {
+        url += `&workspace_id=${workspaceId}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -34,7 +39,7 @@ export function ProjectedBalanceCard({ month, year, refreshTrigger }: ProjectedB
     } finally {
       setIsLoading(false);
     }
-  }, [month, year]);
+  }, [month, year, workspaceId]);
 
   useEffect(() => {
     fetchProjection();

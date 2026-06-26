@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { CategoryFormModal } from "@/components/ui/CategoryFormModal";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -31,11 +32,13 @@ export default function CategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { activeWorkspaceId } = useWorkspace();
 
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/categories");
+      const url = activeWorkspaceId ? `/api/categories?workspace_id=${activeWorkspaceId}` : "/api/categories";
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setCategories(data);
@@ -49,14 +52,15 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [activeWorkspaceId]);
 
   const handleDeleteCategory = async () => {
     if (!categoryToDelete) return;
     
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/categories/${categoryToDelete}`, { method: "DELETE" });
+      const url = `/api/categories/${categoryToDelete}${activeWorkspaceId ? `?workspace_id=${activeWorkspaceId}` : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to delete category");
@@ -92,6 +96,7 @@ export default function CategoriesPage() {
           onOpenChange={setIsDialogOpen}
           onSuccess={fetchCategories}
           categories={categories}
+          workspaceId={activeWorkspaceId}
         />
       </div>
 

@@ -32,6 +32,7 @@ interface CategoryFormModalProps {
   categories: Category[];
   mode?: "create" | "edit";
   initialData?: Category;
+  workspaceId?: string | null;
 }
 
 export function CategoryFormModal({
@@ -41,6 +42,7 @@ export function CategoryFormModal({
   categories,
   mode = "create",
   initialData,
+  workspaceId,
 }: CategoryFormModalProps) {
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState("Tag");
@@ -108,6 +110,7 @@ export function CategoryFormModal({
           icon: newIcon,
           color: newColor,
           type: newType,
+          workspace_id: workspaceId || null,
         }),
       });
       if (!res.ok) {

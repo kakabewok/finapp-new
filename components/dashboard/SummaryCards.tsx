@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownIcon, ArrowUpIcon, DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { ProjectedBalanceCard } from "@/components/budget/ProjectedBalanceCard";
 
-export function SummaryCards({ data }: { data: DashboardSummary }) {
+export function SummaryCards({ data, workspaceId }: { data: DashboardSummary; workspaceId?: string | null }) {
   const getChangeColor = (change: number, isExpense: boolean = false) => {
     if (change === 0) return "text-muted-foreground";
     if (isExpense) {
@@ -79,7 +79,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
       </Card>
 
       {/* Projected Balance Card */}
-      <ProjectedBalanceCard month={new Date().getMonth() + 1} year={new Date().getFullYear()} />
+      <ProjectedBalanceCard month={new Date().getMonth() + 1} year={new Date().getFullYear()} workspaceId={workspaceId} />
     </div>
   );
 }

@@ -34,6 +34,7 @@ const updateTransactionSchema = z.object({
   payment_method: z.string().nullable().optional(),
   items: z.array(transactionItemSchema).nullable().optional(),
   tags: z.array(z.string()).nullable().optional(),
+  workspace_id: z.string().uuid().nullable().optional(),
 });
 
 type Context = {
@@ -90,13 +91,14 @@ export async function PUT(request: Request, context: Context) {
     const body = await request.json();
     const validatedData = updateTransactionSchema.parse(body);
 
-    // RLS handles access control
-    const { data, error } = await supabase
-      .from("transactions")
-      .update(validatedData)
-      .eq("id", id)
-      .select()
-      .single();
+    let query = supabase.from("transactions").update(validatedData).eq("id", id);
+    if (validatedData.workspace_id) {
+      query = query.eq("workspace_id", validatedData.workspace_id);
+    } else {
+      query = query.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data, error } = await query.select().single();
 
     if (error) {
       console.error("Error updating transaction:", error);
@@ -125,22 +127,30 @@ export async function DELETE(request: Request, context: Context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspace_id");
+
     // First, check if transaction exists and has a receipt image to delete from Cloudinary
-    const { data: transaction } = await supabase
-      .from("transactions")
-      .select("receipt_public_id")
-      .eq("id", id)
-      .single();
+    let checkQuery = supabase.from("transactions").select("receipt_public_id").eq("id", id);
+    if (workspaceId) {
+      checkQuery = checkQuery.eq("workspace_id", workspaceId);
+    } else {
+      checkQuery = checkQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+    const { data: transaction } = await checkQuery.single();
 
     if (transaction?.receipt_public_id) {
       await deleteFromCloudinary(transaction.receipt_public_id);
     }
     
     // RLS handles access control
-    const { error } = await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", id);
+    let deleteQuery = supabase.from("transactions").delete().eq("id", id);
+    if (workspaceId) {
+      deleteQuery = deleteQuery.eq("workspace_id", workspaceId);
+    } else {
+      deleteQuery = deleteQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+    const { error } = await deleteQuery;
 
     if (error) {
       console.error("Error deleting transaction:", error);

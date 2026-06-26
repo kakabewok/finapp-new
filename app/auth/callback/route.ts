@@ -16,7 +16,11 @@ export async function GET(request: Request) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await seedDefaultCategories(supabase, user.id);
+        await seedDefaultCategories({
+          supabase,
+          workspaceId: null,
+          userId: user.id
+        });
       }
       // Redirect to the 'next' URL if provided, otherwise to dashboard
       const redirectUrl = next ? `${baseUrl}${next}` : `${baseUrl}/dashboard`;

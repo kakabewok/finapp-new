@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { pdf } from '@react-pdf/renderer';
 import { DateRange } from "react-day-picker";
 import { format, startOfMonth, endOfMonth, startOfWeek, subMonths, subDays, startOfYear, endOfYear, parseISO, differenceInDays } from "date-fns";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 
 const PRESETS = [
   { label: "This Week", getValue: () => ({ from: startOfWeek(new Date(), { weekStartsOn: 1 }), to: new Date() }) },
@@ -53,6 +54,7 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [activePreset, setActivePreset] = useState<string>("This Month");
+  const { activeWorkspaceId } = useWorkspace();
 
   // Sync date range to URL and fetch
   const updateUrlAndFetch = useCallback((range: DateRange) => {
@@ -279,7 +281,8 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <ProjectedBalanceCard 
               month={dateRange?.from?.getMonth()! + 1 || new Date().getMonth() + 1} 
-              year={dateRange?.from?.getFullYear() || new Date().getFullYear()} 
+              year={dateRange?.from?.getFullYear() || new Date().getFullYear()}
+              workspaceId={activeWorkspaceId}
             />
           </div>
           <ReportSummary data={reportData} />

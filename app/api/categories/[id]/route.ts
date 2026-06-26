@@ -8,6 +8,7 @@ const updateCategorySchema = z.object({
   color: z.string().nullable().optional(),
   budget_monthly: z.number().nullable().optional(),
   type: z.enum(["expense", "income", "both"]).optional(),
+  workspace_id: z.string().uuid().nullable().optional(),
 });
 
 type Context = {
@@ -44,13 +45,18 @@ export async function PUT(request: Request, context: Context) {
       return NextResponse.json({ error: "Cannot modify this category" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from("categories")
       .update(validatedData)
-      .eq("id", id)
-      .eq("user_id", user.id) // Extra safety
-      .select()
-      .single();
+      .eq("id", id);
+
+    if (validatedData.workspace_id) {
+      updateQuery = updateQuery.eq("workspace_id", validatedData.workspace_id);
+    } else {
+      updateQuery = updateQuery.is("workspace_id", null).eq("user_id", user.id); // Extra safety
+    }
+
+    const { data, error } = await updateQuery.select().single();
 
     if (error) {
       console.error("Error updating category:", error);
@@ -94,11 +100,21 @@ export async function DELETE(request: Request, context: Context) {
       return NextResponse.json({ error: "Cannot delete this category" }, { status: 403 });
     }
 
-    const { error } = await supabase
+    const body = await request.json().catch(() => ({}));
+    const { workspace_id } = body;
+
+    let deleteQuery = supabase
       .from("categories")
       .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("id", id);
+
+    if (workspace_id) {
+      deleteQuery = deleteQuery.eq("workspace_id", workspace_id);
+    } else {
+      deleteQuery = deleteQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) {
       console.error("Error deleting category:", error);

@@ -1,10 +1,26 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-export async function seedDefaultCategories(supabase: SupabaseClient, userId: string) {
-  const { count, error } = await supabase
-    .from("categories")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId);
+export async function seedDefaultCategories({
+  supabase,
+  workspaceId,
+  userId,
+}: {
+  supabase: SupabaseClient;
+  workspaceId: string | null;
+  userId: string | null;
+}) {
+  // Determine if we're seeding for a workspace or a personal account
+  let query = supabase.from("categories").select("*", { count: "exact", head: true });
+  
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  } else if (userId) {
+    query = query.is("workspace_id", null).eq("user_id", userId);
+  } else {
+    return; // Safety check
+  }
+
+  const { count, error } = await query;
 
   if (error) {
     console.error("Error checking existing categories:", error);
@@ -22,7 +38,12 @@ export async function seedDefaultCategories(supabase: SupabaseClient, userId: st
       { name: "Education", icon: "GraduationCap", color: "#06B6D4", type: "expense" },
       { name: "Income", icon: "TrendingUp", color: "#22C55E", type: "income" },
       { name: "Other", icon: "MoreHorizontal", color: "#6B7280", type: "both" },
-    ].map(cat => ({ ...cat, user_id: userId, is_default: true }));
+    ].map(cat => ({
+      ...cat,
+      user_id: workspaceId ? null : userId,
+      workspace_id: workspaceId || null,
+      is_default: true,
+    }));
 
     const { error: insertError } = await supabase.from("categories").insert(defaultCategories);
     if (insertError) {

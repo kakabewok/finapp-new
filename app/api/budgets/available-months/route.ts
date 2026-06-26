@@ -11,12 +11,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all budgets with their date ranges for the "Copy from..." feature
-    const { data: budgets, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const workspaceId = searchParams.get("workspace_id");
+
+    let query = supabase
       .from("budgets")
       .select("id, start_date, end_date, category_id")
-      .eq("user_id", user.id)
       .order("start_date", { ascending: false });
+
+    if (workspaceId) {
+      query = query.eq("workspace_id", workspaceId);
+    } else {
+      query = query.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    // Fetch all budgets with their date ranges for the "Copy from..." feature
+    const { data: budgets, error } = await query;
 
     if (error) {
       console.error("Error fetching available periods:", error);

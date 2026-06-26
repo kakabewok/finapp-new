@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import { WorkspaceMember, WorkspaceRole } from "@/types";
 import { toast } from "sonner";
@@ -311,6 +312,13 @@ export default function WorkspaceSettingsPage() {
               Members ({members.length})
             </CardTitle>
             <CardDescription>People who have access to this workspace.</CardDescription>
+            <Link
+              href="/workspace/permissions"
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1 mt-1"
+            >
+              <Shield className="h-3 w-3" />
+              View permission details
+            </Link>
           </div>
           {canPerform("invite_members") && (
             <Button onClick={() => setShowInviteDialog(true)} size="sm">
@@ -600,18 +608,18 @@ export default function WorkspaceSettingsPage() {
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-sm md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Invite Members</DialogTitle>
             <DialogDescription>
               Generate a shareable link to invite people to this workspace. Anyone with the link can join.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          {/* <div className="w-full space-y-4 pt-4">
             <Button
               onClick={handleGenerateInvite}
               disabled={isGeneratingInvite}
-              className="w-full"
+              className="max-w-sm md:w-full"
             >
               {isGeneratingInvite ? (
                 <>
@@ -633,13 +641,13 @@ export default function WorkspaceSettingsPage() {
               <>
                 <Separator />
                 <p className="text-sm font-medium">Active Links</p>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                <div className="space-y-2 max-h-[200px] overflow-y-auto max-w-md md:w-full">
                   {invites.map((invite) => (
                     <div
                       key={invite.id}
                       className="flex items-center gap-2 p-2 rounded border bg-muted/50"
                     >
-                      <code className="text-xs flex-1 truncate">{invite.invite_url}</code>
+                      <code className="text-xs flex-1 min-w-0 truncate">{invite.invite_url}</code>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -654,6 +662,108 @@ export default function WorkspaceSettingsPage() {
                       </Button>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+          </div> */}
+          <div className="w-full space-y-4 pt-4 px-1">
+            <Button
+              onClick={handleGenerateInvite}
+              disabled={isGeneratingInvite}
+              className="w-full"
+            >
+              {isGeneratingInvite ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Generate New Invite Link
+                </>
+              )}
+            </Button>
+
+            <p className="text-xs text-muted-foreground text-center px-2">
+              Links expire after 7 days. You can revoke them anytime.
+            </p>
+
+            {invites.length > 0 && (
+              <>
+                <Separator />
+                <p className="text-sm font-medium">Active Link</p>
+                <div className="w-full flex flex-col gap-2">
+                  {/* Hanya tampilkan 1 link terbaru */}
+                  {invites.map((invite) => {
+                    const daysLeft = Math.ceil(
+                      (new Date(invite.expires_at).getTime() - Date.now()) /
+                      (1000 * 60 * 60 * 24)
+                    )
+                    const truncatedUrl = (() => {
+                      try {
+                        const url = new URL(invite.invite_url)
+                        const token = url.searchParams.get("token") ?? ""
+                        return `${url.hostname}/invite?token=${token.slice(0, 8)}...`
+                      } catch {
+                        return invite.invite_url.slice(0, 30) + "..."
+                      }
+                    })()
+
+                    return (
+                      <div
+                        key={invite.id}
+                        className="w-full rounded-xs border bg-muted/50 p-3 space-y-2"
+                      >
+                        {/* Header: label + days left */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Invite Link
+                          </span>
+                          <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
+                            {daysLeft}d left
+                          </span>
+                        </div>
+
+                        {/* Truncated URL */}
+                        <code className="text-xs block w-full truncate text-foreground">
+                          {truncatedUrl}
+                        </code>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3"
+                            onClick={() => handleCopyLink(invite.invite_url, invite.id)}
+                          >
+                            {copiedInviteId === invite.id ? (
+                              <>
+                                <Check className="h-3 w-3 text-green-500 mr-1" />
+                                <span className="text-xs">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                <span className="hidden md:flex text-xs">Copy</span>
+                              </>
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 px-3"
+                            onClick={() => handleRevokeInvite(invite.id)}
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            <span className="hidden md:flex text-xs">Revoke</span>
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </>
             )}

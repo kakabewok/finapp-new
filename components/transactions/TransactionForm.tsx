@@ -13,6 +13,7 @@ import { getIcon } from "@/lib/icons";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { CategorySelector } from "@/components/ui/CategorySelector";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { useWorkspace } from "@/components/workspace/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -86,6 +87,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
+  const { activeWorkspaceId } = useWorkspace();
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -126,7 +128,8 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch("/api/categories");
+        const url = activeWorkspaceId ? `/api/categories?workspace_id=${activeWorkspaceId}` : "/api/categories";
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -136,7 +139,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
       }
     }
     fetchCategories();
-  }, []);
+  }, [activeWorkspaceId]);
 
   const filteredCategories = categories.filter(
     (c) => c.type === watchType || c.type === "both"
@@ -152,6 +155,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
       const payload = {
         ...data,
         transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
+        workspace_id: activeWorkspaceId || null,
       };
 
       const url = isEdit && initialData ? `/api/transactions/${initialData.id}` : "/api/transactions";

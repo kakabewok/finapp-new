@@ -85,7 +85,7 @@ export default function DashboardPage() {
         </div>
       ) : data ? (
         <div className="space-y-6">
-          <SummaryCards data={data.summary} />
+          <SummaryCards data={data.summary} workspaceId={activeWorkspaceId} />
 
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
             <SpendingTrendChart data={data.trendData} />

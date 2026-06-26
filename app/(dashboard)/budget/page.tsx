@@ -116,7 +116,8 @@ export default function BudgetPage() {
   const handleDelete = async () => {
     if (!deletingId) return;
     try {
-      const res = await fetch(`/api/budgets/${deletingId}`, { method: "DELETE" });
+      const url = `/api/budgets/${deletingId}${activeWorkspaceId ? `?workspace_id=${activeWorkspaceId}` : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
       if (res.ok) {
         toast.success("Budget deleted");
         fetchBudgets();
@@ -140,7 +141,10 @@ export default function BudgetPage() {
       const res = await fetch("/api/budgets/bulk", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+        body: JSON.stringify({ 
+          ids: Array.from(selectedIds),
+          workspace_id: activeWorkspaceId || null
+        }),
       });
       if (res.ok) {
         toast.success(`${selectedIds.size} budgets deleted`);
@@ -288,7 +292,7 @@ export default function BudgetPage() {
               {formatCurrency(totalRemaining, "IDR")}
             </p>
           </div>
-          <ProjectedBalanceCard month={currentMonth} year={currentYear} refreshTrigger={budgets} />
+          <ProjectedBalanceCard month={currentMonth} year={currentYear} refreshTrigger={budgets} workspaceId={activeWorkspaceId} />
         </div>
       )}
 
@@ -522,6 +526,7 @@ export default function BudgetPage() {
         onOpenChange={(open) => !open && setRenewingBudget(null)}
         budget={renewingBudget}
         onSuccess={fetchBudgets}
+        workspaceId={activeWorkspaceId}
       />
 
       <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>

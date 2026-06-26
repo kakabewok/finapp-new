@@ -21,9 +21,10 @@ interface RenewBudgetDialogProps {
   onOpenChange: (open: boolean) => void;
   budget: BudgetSummary | null;
   onSuccess: () => void;
+  workspaceId?: string | null;
 }
 
-export function RenewBudgetDialog({ open, onOpenChange, budget, onSuccess }: RenewBudgetDialogProps) {
+export function RenewBudgetDialog({ open, onOpenChange, budget, onSuccess, workspaceId }: RenewBudgetDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   if (!budget) return null;
@@ -53,6 +54,7 @@ export function RenewBudgetDialog({ open, onOpenChange, budget, onSuccess }: Ren
       const res = await fetch(`/api/budgets/${budget.id}/renew`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_id: workspaceId || null }),
       });
 
       if (!res.ok) {

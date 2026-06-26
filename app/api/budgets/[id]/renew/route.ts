@@ -14,13 +14,22 @@ export async function POST(request: Request, context: Context) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const body = await request.json().catch(() => ({}));
+    const { workspace_id } = body;
+
     // 1. Fetch the budget
-    const { data: budget, error: fetchError } = await supabase
+    let fetchQuery = supabase
       .from("budgets")
       .select("*")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
+      .eq("id", id);
+
+    if (workspace_id) {
+      fetchQuery = fetchQuery.eq("workspace_id", workspace_id);
+    } else {
+      fetchQuery = fetchQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: budget, error: fetchError } = await fetchQuery.single();
 
     if (fetchError || !budget) {
       return NextResponse.json({ error: "Budget not found" }, { status: 404 });
@@ -57,14 +66,21 @@ export async function POST(request: Request, context: Context) {
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
     // 4. Compute total_spent for the current period
-    const { data: transactions } = await supabase
+    let txQuery = supabase
       .from("transactions")
       .select("amount")
-      .eq("user_id", user.id)
       .eq("type", "expense")
       .eq("category_id", budget.category_id)
       .gte("transaction_date", budget.start_date)
       .lte("transaction_date", budget.end_date);
+
+    if (workspace_id) {
+      txQuery = txQuery.eq("workspace_id", workspace_id);
+    } else {
+      txQuery = txQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: transactions } = await txQuery;
 
     const totalSpent = (transactions || []).reduce((sum, tx) => sum + Number(tx.amount), 0);
     const plannedAmount = Number(budget.amount) + Number(budget.rollover_amount || 0);
@@ -76,6 +92,7 @@ export async function POST(request: Request, context: Context) {
       .insert({
         original_budget_id: budget.id,
         user_id: user.id,
+        workspace_id: workspace_id || null,
         category_id: budget.category_id,
         start_date: budget.start_date,
         end_date: budget.end_date,
@@ -102,7 +119,7 @@ export async function POST(request: Request, context: Context) {
     // If over budget or rollover disabled: reset to original amount
 
     // 7. Update the budget with new period
-    const { data: updatedBudget, error: updateError } = await supabase
+    let updateQuery = supabase
       .from("budgets")
       .update({
         start_date: formatDate(newStartDate),
@@ -113,10 +130,15 @@ export async function POST(request: Request, context: Context) {
         month: newStartDate.getMonth() + 1,
         year: newStartDate.getFullYear(),
       })
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .select()
-      .single();
+      .eq("id", id);
+
+    if (workspace_id) {
+      updateQuery = updateQuery.eq("workspace_id", workspace_id);
+    } else {
+      updateQuery = updateQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    const { data: updatedBudget, error: updateError } = await updateQuery.select().single();
 
     if (updateError) {
       console.error("Error updating budget:", updateError);

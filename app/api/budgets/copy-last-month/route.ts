@@ -14,13 +14,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const sourceStart = searchParams.get("sourceStart");
     const sourceEnd = searchParams.get("sourceEnd");
+    const workspaceId = searchParams.get("workspace_id");
 
     if (!sourceStart || !sourceEnd) {
       return NextResponse.json({ error: "sourceStart and sourceEnd are required" }, { status: 400 });
     }
 
-    // Fetch budgets from the source period with category details
-    const { data: sourceBudgets, error } = await supabase
+    let fetchQuery = supabase
       .from("budgets")
       .select(`
         id,
@@ -35,9 +35,17 @@ export async function GET(request: Request) {
           type
         )
       `)
-      .eq("user_id", user.id)
       .eq("start_date", sourceStart)
       .eq("end_date", sourceEnd);
+
+    if (workspaceId) {
+      fetchQuery = fetchQuery.eq("workspace_id", workspaceId);
+    } else {
+      fetchQuery = fetchQuery.is("workspace_id", null).eq("user_id", user.id);
+    }
+
+    // Fetch budgets from the source period with category details
+    const { data: sourceBudgets, error } = await fetchQuery;
 
     if (error) {
       console.error("Error fetching source budgets:", error);

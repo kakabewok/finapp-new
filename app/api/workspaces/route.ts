@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { seedDefaultCategories } from "@/lib/supabase/seed-categories";
 
 const createWorkspaceSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name too long"),
@@ -93,6 +94,13 @@ export async function POST(request: Request) {
       await supabase.from("workspaces").delete().eq("id", workspace.id);
       return NextResponse.json({ error: "Failed to create workspace" }, { status: 500 });
     }
+
+    // 3. Seed default categories for the new workspace
+    await seedDefaultCategories({
+      supabase,
+      workspaceId: workspace.id,
+      userId: null,
+    });
 
     return NextResponse.json(workspace, { status: 201 });
   } catch (error) {
