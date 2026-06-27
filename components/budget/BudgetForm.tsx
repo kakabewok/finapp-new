@@ -184,6 +184,7 @@ export function BudgetForm({ open, onOpenChange, categories, existingBudget, onS
               onCategoryCreated={onCategoryCreated}
               filterType="expense"
               placeholder="Select category"
+              workspaceId={workspaceId}
             />
           </div>
 

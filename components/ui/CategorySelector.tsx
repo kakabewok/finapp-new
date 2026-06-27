@@ -39,6 +39,7 @@ interface CategorySelectorProps {
   filterType?: "expense" | "income" | "transfer" | "all";
   placeholder?: string;
   disabled?: boolean;
+  workspaceId?: string | null;
 }
 
 export function CategorySelector({
@@ -49,6 +50,7 @@ export function CategorySelector({
   filterType = "all",
   placeholder = "Select a category",
   disabled = false,
+  workspaceId,
 }: CategorySelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -173,6 +175,7 @@ export function CategorySelector({
         onOpenChange={setShowCreate}
         onSuccess={handleCategorySuccess}
         categories={categories}
+        workspaceId={workspaceId}
       />
     </>
   );

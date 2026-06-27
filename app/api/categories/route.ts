@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       .from("categories")
       .insert({
         ...validatedData,
-        user_id: user.id,
+        user_id: validatedData.workspace_id ? null : user.id,
         is_default: false,
         workspace_id: validatedData.workspace_id || null,
       })

@@ -283,6 +283,7 @@ export function TransactionForm({ initialData, isEdit }: TransactionFormProps) {
                     onCategoryCreated={handleCategoryCreated}
                     filterType={watchType as any}
                     placeholder="Select a category"
+                    workspaceId={activeWorkspaceId}
                   />
                 </FormControl>
                 <FormMessage />

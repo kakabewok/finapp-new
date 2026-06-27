@@ -30,10 +30,10 @@ export async function PUT(request: Request, context: Context) {
     const body = await request.json();
     const validatedData = updateCategorySchema.parse(body);
 
-    // Ensure user owns the category and it's not a default one
+    // Ensure user owns the category or belongs to the workspace, and it's not a default one
     const { data: existingCategory } = await supabase
       .from("categories")
-      .select("is_default, user_id")
+      .select("is_default, user_id, workspace_id")
       .eq("id", id)
       .single();
 
@@ -41,7 +41,21 @@ export async function PUT(request: Request, context: Context) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    if (existingCategory.is_default || existingCategory.user_id !== user.id) {
+    if (existingCategory.is_default) {
+      return NextResponse.json({ error: "Cannot modify default categories" }, { status: 403 });
+    }
+
+    if (existingCategory.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("id")
+        .eq("workspace_id", existingCategory.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      if (!membership) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    } else if (existingCategory.user_id !== user.id) {
       return NextResponse.json({ error: "Cannot modify this category" }, { status: 403 });
     }
 
@@ -85,10 +99,10 @@ export async function DELETE(request: Request, context: Context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Ensure user owns the category and it's not a default one
+    // Ensure user owns the category or belongs to the workspace, and it's not a default one
     const { data: existingCategory } = await supabase
       .from("categories")
-      .select("is_default, user_id")
+      .select("is_default, user_id, workspace_id")
       .eq("id", id)
       .single();
 
@@ -96,7 +110,21 @@ export async function DELETE(request: Request, context: Context) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    if (existingCategory.is_default || existingCategory.user_id !== user.id) {
+    if (existingCategory.is_default) {
+      return NextResponse.json({ error: "Cannot delete default categories" }, { status: 403 });
+    }
+
+    if (existingCategory.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("id")
+        .eq("workspace_id", existingCategory.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      if (!membership) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    } else if (existingCategory.user_id !== user.id) {
       return NextResponse.json({ error: "Cannot delete this category" }, { status: 403 });
     }
 
