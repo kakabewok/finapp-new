@@ -47,9 +47,11 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
-      const callbackUrl = nextUrl
-        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`
-        : `${window.location.origin}/auth/callback`;
+      if (nextUrl) {
+        document.cookie = `return_url=${encodeURIComponent(nextUrl)}; path=/; max-age=3600; SameSite=Lax`;
+      }
+
+      const callbackUrl = `${window.location.origin}/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

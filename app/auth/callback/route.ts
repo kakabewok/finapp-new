@@ -1,12 +1,35 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { seedDefaultCategories } from "@/lib/supabase/seed-categories";
+import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
+export async function GET(request: NextRequest) {
+  const requestUrl = request.nextUrl.clone();
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
+  
+  const cookieStore = await cookies();
+  
+  // Try to get next from query params (fallback) or from cookie
+  let next = requestUrl.searchParams.get("next");
+  if (!next) {
+    const nextCookie = cookieStore.get("return_url");
+    if (nextCookie?.value) {
+      next = decodeURIComponent(nextCookie.value);
+    }
+  }
+
+  // NextRequest automatically handles forwarded headers if configured, but to be robust against 
+  // misconfigured proxies combined with local .env variables in production:
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const host = forwardedHost || request.headers.get("host");
+  const protocol = request.headers.get("x-forwarded-proto") || (requestUrl.protocol === "http:" ? "http" : "https");
+  
+  const isLocalhostAppUrl = process.env.NEXT_PUBLIC_APP_URL?.includes("localhost");
+  const resolvedOrigin = (isLocalhostAppUrl && host && !host.includes("localhost")) 
+    ? `${protocol}://${host}` 
+    : (process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin);
+  
+  const baseUrl = resolvedOrigin;
 
   if (code) {
     const supabase = await createSupabaseServerClient();
@@ -22,13 +45,15 @@ export async function GET(request: Request) {
           userId: user.id
         });
       }
-      // Redirect to the 'next' URL if provided, otherwise to dashboard
+      
       const redirectUrl = next ? `${baseUrl}${next}` : `${baseUrl}/dashboard`;
-      return NextResponse.redirect(redirectUrl);
+      const response = NextResponse.redirect(redirectUrl);
+      
+      response.cookies.delete("return_url");
+      return response;
     }
   }
 
-  // Redirect to login page with an error if code exchange failed or no code is present
   return NextResponse.redirect(`${baseUrl}/login?error=auth`);
 }
 
