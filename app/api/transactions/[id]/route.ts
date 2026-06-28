@@ -91,8 +91,55 @@ export async function PUT(request: Request, context: Context) {
     const body = await request.json();
     const validatedData = updateTransactionSchema.parse(body);
 
+    if (validatedData.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", validatedData.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || membership.role === "viewer") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+
+      // Members can only update their own transactions. Owner/Admin can update any.
+      if (membership.role === "member") {
+        const { data: trx } = await supabase
+          .from("transactions")
+          .select("user_id")
+          .eq("id", id)
+          .single();
+        if (trx?.user_id !== user.id) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+      }
+    }
+
     let query = supabase.from("transactions").update(validatedData).eq("id", id);
     if (validatedData.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", validatedData.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || membership.role === "viewer") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+
+      // Members can only update their own transactions. Owner/Admin can update any.
+      if (membership.role === "member") {
+        const { data: trx } = await supabase
+          .from("transactions")
+          .select("user_id")
+          .eq("id", id)
+          .single();
+        if (trx?.user_id !== user.id) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+      }
       query = query.eq("workspace_id", validatedData.workspace_id);
     } else {
       query = query.is("workspace_id", null).eq("user_id", user.id);
@@ -142,11 +189,38 @@ export async function DELETE(request: Request, context: Context) {
     if (transaction?.receipt_public_id) {
       await deleteFromCloudinary(transaction.receipt_public_id);
     }
-    
-    // RLS handles access control
+
+    const { searchParams: paramsUrl } = new URL(request.url);
+    const workspace_id = paramsUrl.get("workspace_id");
+
+    if (workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || membership.role === "viewer") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+
+      // Members can only delete their own transactions. Owner/Admin can delete any.
+      if (membership.role === "member") {
+        const { data: trx } = await supabase
+          .from("transactions")
+          .select("user_id")
+          .eq("id", id)
+          .single();
+        if (trx?.user_id !== user.id) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+      }
+    }
+
     let deleteQuery = supabase.from("transactions").delete().eq("id", id);
-    if (workspaceId) {
-      deleteQuery = deleteQuery.eq("workspace_id", workspaceId);
+    if (workspace_id) {
+      deleteQuery = deleteQuery.eq("workspace_id", workspace_id);
     } else {
       deleteQuery = deleteQuery.is("workspace_id", null).eq("user_id", user.id);
     }

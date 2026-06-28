@@ -127,6 +127,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = transactionSchema.parse(body);
 
+    if (validatedData.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", validatedData.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    }
+
     const { data, error } = await supabase
       .from("transactions")
       .insert({

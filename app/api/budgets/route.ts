@@ -190,7 +190,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Error creating budget:", error);
-      return NextResponse.json({ error: "Failed to create budget" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to create budget", details: error }, { status: 500 });
     }
 
     return NextResponse.json(data, { status: 201 });
