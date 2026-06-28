@@ -81,6 +81,7 @@ export function CategoryFormModal({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!newName.trim()) {
       toast.error("Category name is required");
       return;
@@ -119,8 +120,13 @@ export function CategoryFormModal({
       }
       const savedCategory: Category = await res.json();
       toast.success(`Category "${savedCategory.name}" ${mode === "create" ? "created" : "updated"}`);
+
+      // Close the modal first, safely decoupled from the submit event
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 0);
+
       onSuccess?.(savedCategory);
-      onOpenChange(false);
     } catch (err: any) {
       toast.error(err.message);
     } finally {

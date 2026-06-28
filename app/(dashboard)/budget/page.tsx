@@ -44,7 +44,7 @@ export default function BudgetPage() {
   const [editingBudget, setEditingBudget] = useState<BudgetSummary | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   const { activeWorkspaceId, canPerform } = useWorkspace();
 
   // Renew dialog state
@@ -82,11 +82,12 @@ export default function BudgetPage() {
       const velocityUrl = activeWorkspaceId
         ? `/api/budgets/velocity?workspace_id=${activeWorkspaceId}`
         : `/api/budgets/velocity`;
+      const categoryUrl = activeWorkspaceId ? `/api/categories?workspace_id=${activeWorkspaceId}` : "/api/categories";
 
       const [budgetsRes, velocityRes, catRes] = await Promise.all([
         fetch(url),
         fetch(velocityUrl),
-        fetch(`/api/categories`)
+        fetch(categoryUrl)
       ]);
 
       if (budgetsRes.ok) setBudgets(await budgetsRes.json());
@@ -141,7 +142,7 @@ export default function BudgetPage() {
       const res = await fetch("/api/budgets/bulk", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           ids: Array.from(selectedIds),
           workspace_id: activeWorkspaceId || null
         }),

@@ -48,11 +48,12 @@ export async function PUT(request: Request, context: Context) {
     if (existingCategory.workspace_id) {
       const { data: membership } = await supabase
         .from("workspace_members")
-        .select("id")
+        .select("role")
         .eq("workspace_id", existingCategory.workspace_id)
         .eq("user_id", user.id)
         .single();
-      if (!membership) {
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       }
     } else if (existingCategory.user_id !== user.id) {
@@ -99,6 +100,15 @@ export async function DELETE(request: Request, context: Context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    let workspace_id = searchParams.get("workspace_id");
+
+    if (!workspace_id) {
+      // Fallback for any client still sending it in the body
+      const body = await request.json().catch(() => ({}));
+      workspace_id = body.workspace_id;
+    }
+
     // Ensure user owns the category or belongs to the workspace, and it's not a default one
     const { data: existingCategory } = await supabase
       .from("categories")
@@ -117,19 +127,17 @@ export async function DELETE(request: Request, context: Context) {
     if (existingCategory.workspace_id) {
       const { data: membership } = await supabase
         .from("workspace_members")
-        .select("id")
+        .select("role")
         .eq("workspace_id", existingCategory.workspace_id)
         .eq("user_id", user.id)
         .single();
-      if (!membership) {
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       }
     } else if (existingCategory.user_id !== user.id) {
       return NextResponse.json({ error: "Cannot delete this category" }, { status: 403 });
     }
-
-    const body = await request.json().catch(() => ({}));
-    const { workspace_id } = body;
 
     let deleteQuery = supabase
       .from("categories")

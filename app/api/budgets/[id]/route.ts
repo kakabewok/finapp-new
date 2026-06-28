@@ -107,6 +107,19 @@ export async function PATCH(request: Request, context: Context) {
     const body = await request.json();
     const validatedData = patchSchema.parse(body);
 
+    if (validatedData.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", validatedData.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    }
+
     // If setting is_recurring to false, also force is_rollover to false
     const updatePayload: Record<string, any> = { ...validatedData };
     if (validatedData.is_recurring === false) {
@@ -151,8 +164,27 @@ export async function DELETE(request: Request, context: Context) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json().catch(() => ({}));
-    const { workspace_id } = body;
+    const { searchParams } = new URL(request.url);
+    let workspace_id = searchParams.get("workspace_id");
+
+    if (!workspace_id) {
+      // Fallback for any client still sending it in the body
+      const body = await request.json().catch(() => ({}));
+      workspace_id = body.workspace_id;
+    }
+
+    if (workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    }
 
     let deleteQuery = supabase
       .from("budgets")

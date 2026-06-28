@@ -66,6 +66,16 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (validatedData.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role")
+        .eq("workspace_id", validatedData.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!membership || !["owner", "admin", "member"].includes(membership.role)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
       duplicateQuery = duplicateQuery.eq("workspace_id", validatedData.workspace_id);
     } else {
       duplicateQuery = duplicateQuery.is("workspace_id", null).eq("user_id", user.id);
